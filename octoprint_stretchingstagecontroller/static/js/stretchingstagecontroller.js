@@ -16,9 +16,7 @@ $(function() {
         // the SettingsViewModel been properly populated.
 
         self.onBeforeBinding = function() {
-            //self.savePath(self.settings.settings.plugins.stretchingstagecontroller.save_path());
-            self.savePath("Test");
-
+            self.savePath(self.settings.settings.plugins.stretchingstagecontroller.save_path());
         }
     }
     OCTOPRINT_VIEWMODELS.push({
