@@ -1,22 +1,7 @@
 <!DOCTYPE html>
 <body>
 	<h1> Stretching Stage Controller </h1>
-	<span data-bind="text: ports_available"></span>
-	  <label for="port_select">Select a port for reading data:</label>
-	  <select name="port_select" id="port_select">
-	    <option value="volvo">Volvo</option>
-	    <option value="saab">Saab</option>
-	    <option value="opel">Opel</option>
-	    <option value="audi">Audi</option>
-	  </select>
-	  <br><br>
-	  <input type="submit" value="Submit">
-	</form>
-	<div class="input-append">
-	    <input type="text" class="input-xxlarge" data-bind="value: savePath">
-	    <button class="btn btn-primary" data-bind="click: goToUrl">{{ _('Go') }}</button>
-	</div>
-	<h>Today's message is: <span data-bind="text: savePath"></span></h>
+	<h>Outfiles will be saved in: <span data-bind="text: savePath"></span></h>
 
 </body>
 

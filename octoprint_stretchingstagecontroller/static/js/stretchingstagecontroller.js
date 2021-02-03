@@ -1,16 +1,11 @@
 $(function() {
     function stretchingstagecontrollerViewModel(parameters) {
         var self = this;
+        self.name = "stretchingstagecontroller";
 
         self.settings = parameters[0];
 
-        // this will hold the URL currently displayed by the iframe
-        self.portsAvailable = ko.observable();
-
-        // this will hold the URL entered in the text field
-        self.newPort = ko.observable();
-
-        self.savePath = ko.observable()
+        self.savePath = ko.observable();
 
         // this will be called when the user clicks the "Go" button and set the iframe's URL to
         // the entered URL
@@ -21,14 +16,18 @@ $(function() {
         // the SettingsViewModel been properly populated.
 
         self.onBeforeBinding = function() {
-            self.savePath(self.settings.settings.plugins.stretchingstagecontroller.save_path());
+            //self.savePath(self.settings.settings.plugins.stretchingstagecontroller.save_path());
+            self.savePath("Test");
+
         }
     }
-
-    // This is how our plugin registers itself with the application, by adding some configuration
-    // information to the global variable OCTOPRINT_VIEWMODELS
-    OCTOPRINT_VIEWMODELS.push([
+    OCTOPRINT_VIEWMODELS.push({
         construct: stretchingstagecontrollerViewModel,
-        elements: ["#tab_plugin_stretchingstagecontroller"]
-    ]);
+
+          // e.g. loginStateViewModel, settingsViewModel, ...
+        dependencies: ["settingsViewModel"],
+
+          // e.g. #settings_plugin_DetailedProgress, #tab_plugin_DetailedProgress, ...
+        elements: ["#tab_plugin_stretchingstagecontroller", "#settings_plugin_stretchingstagecontroller"]
+    });
 });
