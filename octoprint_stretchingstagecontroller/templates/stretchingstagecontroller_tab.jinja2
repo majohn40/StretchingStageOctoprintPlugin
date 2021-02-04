@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <body>
 	<h1> Stretching Stage Controller </h1>
-	<h>Outfiles will be saved in: <span data-bind="text: savePath"></span>- default path can be changed in settings</h>
-	<br>
-	<h>Outfiles will be named: <span data-bind="text: saveFileName"></span></h>
-	<br>
-	<br>
+	<h4> Data Export Details (can be adjusted in settings)</h4>
+		<p>Outfiles will be saved in: <span data-bind="text: savePath"></span></p>
+		<br>
+		<p>Outfiles will be named: <span data-bind="text: saveFileName"></span></p>
+		<br>
+		<h>Port for data readin: <span data-bind="text: serialReadPort"></span></h>
+		<br>
 	<p>Outfile name: </p>
 	<div class="input-append">
     	<input type="text" class="input-xxlarge" data-bind="value: newFileName">
-    <button class="btn btn-primary" data-bind="click: updateFileName">{{ _('Update') }}</button>
-</div>
-
+    	<button class="btn btn-primary" data-bind="click: updateFileName">{{ _('Update') }}</button>
+	</div>
 
 </body>
 

@@ -48,11 +48,14 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
             title = "Print failed hook test"
             print(title)
 
+        self._logger.info("Hello World! (more: %s)" % self._settings.get(["save_path"]))
+
+
 
     def get_template_configs(self):
 	    return [
 	        dict(type="settings", custom_bindings=False),
-	        dict(type="tab", custom_bindings=True)
+	        dict(type="tab", custom_bindings=False)
 	    ]
 
 
