@@ -67,15 +67,16 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
     def get_api_commands(self):
         return dict(
-            validateSettings=[]
+            validateSettings=["save_path", "file_name"]
         )
 
     def on_api_command(self, command, data):
         import flask
-        if command:
-            self._logger.info("test command called----something surely happened?")
-            if "parameter" in data:
-                print("BOOIIIIII")
+        if command == "validateSettings":
+            self._logger.info("validateSettings called")
+            print(data)
+            if "save_path" in data:
+                self._logger.info("Parameters Recieved. Save path is {save_path}".format(**data))
                 parameter = "set"
         elif command == "command2":
             self._logger.info("command2 called, some_parameter is {some_parameter}".format(**data))
