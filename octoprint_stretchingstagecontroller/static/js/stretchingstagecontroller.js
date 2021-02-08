@@ -34,6 +34,6 @@ $(function() {
         dependencies: ["settingsViewModel", "connectionViewModel"],
 
           // e.g. #settings_plugin_DetailedProgress, #tab_plugin_DetailedProgress, ...
-        elements: ["#settings_plugin_stretchingstagecontroller","#tab_plugin_stretchingstagecontroller"]
+        elements: ["#tab_plugin_stretchingstagecontroller"]
     });
 });
