@@ -25,7 +25,17 @@ $(function() {
             self.newFileName("text.txt");
             self.updateFileName();
 
+
         }
+
+        self.validateSettings = function() {
+            var  payload = {"parameter": "value", "other_parameter": "other_value"};
+            OctoPrint.simpleApiCommand("stretchingstagecontroller", "validateSettings", payload)
+            .done(function(response) {
+            })
+
+      }
+
     }
     OCTOPRINT_VIEWMODELS.push({
         construct: stretchingstagecontrollerViewModel,

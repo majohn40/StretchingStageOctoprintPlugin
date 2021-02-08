@@ -10,12 +10,15 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 			    octoprint.plugin.TemplatePlugin,
 			    octoprint.plugin.AssetPlugin,
 			    octoprint.plugin.EventHandlerPlugin,
-			    octoprint.plugin.SettingsPlugin):
+			    octoprint.plugin.SettingsPlugin,
+                octoprint.plugin.SimpleApiPlugin):
 
     def on_after_startup(self):
-        self.ports_available = [comport.device for comport in serial.tools.list_ports.comports()]
+        self.ports_available = ["port1", "port2", "port3"]##[comport.device for comport in serial.tools.list_ports.comports()]
         port = 0;
         self._logger.info("Hello World! (more: %s)" % self._settings.get(["save_path"]))
+        self.selected_port = []
+
 
     def get_assets(self):
 	    return dict(
@@ -61,6 +64,21 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
     def get_settings_defaults(self):
     	return dict(save_path="~/")
+
+    def get_api_commands(self):
+        return dict(
+            validateSettings=[]
+        )
+
+    def on_api_command(self, command, data):
+        import flask
+        if command:
+            self._logger.info("test command called----something surely happened?")
+            if "parameter" in data:
+                print("BOOIIIIII")
+                parameter = "set"
+        elif command == "command2":
+            self._logger.info("command2 called, some_parameter is {some_parameter}".format(**data))
 
 
 
