@@ -3,6 +3,10 @@ from __future__ import absolute_import, unicode_literals
 
 import octoprint.plugin
 import serial.tools.list_ports
+import os
+import os.path
+from os import path
+
 
 
 
@@ -25,8 +29,6 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 	        js=["js/stretchingstagecontroller.js"]
 	    )
     def on_event(self, event, payload):
-        import os
-
         title = description = None
 
         if event == octoprint.events.Events.UPLOAD:
@@ -63,7 +65,10 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 
     def get_settings_defaults(self):
-    	return dict(save_path="~/")
+    	return dict(
+            save_path="~/",
+            port_options = [comport.device for comport in serial.tools.list_ports.comports()]
+        )
 
     def get_api_commands(self):
         return dict(
@@ -73,13 +78,24 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
     def on_api_command(self, command, data):
         import flask
         if command == "validateSettings":
-            self._logger.info("validateSettings called")
-            print(data)
             if "save_path" in data:
                 self._logger.info("Parameters Recieved. Save path is {save_path}".format(**data))
                 parameter = "set"
+                dir_exists = path.exists("{save_path}".format(**data))
+                file_exists = path.exists("{save_path}{file_name}".format(**data))
+                print("{save_path}{file_name}".format(**data))
+                if(dir_exists):
+                    self._logger.info("Settings directory exists and is ready for readout")
+                else:
+                    self._logger.info("*******WARNING******** Save directory for Stretching Stage Controller does not exist! Please pick a valid save directory")
+                if(file_exists):
+                    self._logger.info("*******WARNING******** File you are attempting to write to already exists- file will be appended")
+                else:
+                    self._logger.info("New file being created")
+
         elif command == "command2":
             self._logger.info("command2 called, some_parameter is {some_parameter}".format(**data))
+
 
 
 

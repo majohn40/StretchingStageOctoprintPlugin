@@ -12,6 +12,8 @@ $(function() {
         self.saveFileName = ko.observable();
         self.newFileName = ko.observable();
 
+        self.portOptions = ko.observable();
+
         self.updateFileName = function() {
             self.saveFileName(self.newFileName());
         }
@@ -22,6 +24,8 @@ $(function() {
 
             self.serialReadPort(self.settings.settings.plugins.stretchingstagecontroller.serial_read_port());
 
+            self.portOptions(self.settings.settings.plugins.stretchingstagecontroller.port_options());
+
             self.newFileName("text.txt");
             self.updateFileName();
 
@@ -29,7 +33,7 @@ $(function() {
         }
 
         self.validateSettings = function() {
-            var  payload = {"save_path": self.savePath(), "file_name": "test2"};
+            var  payload = {"save_path": self.savePath(), "file_name": self.saveFileName()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "validateSettings", payload)
             .done(function(response) {
             })

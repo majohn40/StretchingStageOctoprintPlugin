@@ -6,15 +6,17 @@
 		<br>
 		<p>Outfiles will be named: <span data-bind="text: saveFileName"></span></p>
 		<br>
-		<h>Port for data readin: <span data-bind="text: serialReadPort"></span></h>
+		<p>Outfile name: </p>
+		<div class="input-append">
+	    	<input type="text" class="input-xxlarge" data-bind="value: newFileName">
+	    	<button class="btn btn-primary" data-bind="click: updateFileName">{{ _('Update') }}</button>
+		</div>
+		<button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Validate Settings') }}</button>
+	<h4> Connect to Data collection device </h4>
+		<h>Port for data readin: </h>
 		<br>
-	<p>Outfile name: </p>
-	<div class="input-append">
-    	<input type="text" class="input-xxlarge" data-bind="value: newFileName">
-    	<button class="btn btn-primary" data-bind="click: updateFileName">{{ _('Update') }}</button>
-	</div>
-	<button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Validate Settings') }}</button>
-
+		<select data-bind="options: portOptions, value: serialReadPort">Ports available:</select>
+		<br>
 
 </body>
 
