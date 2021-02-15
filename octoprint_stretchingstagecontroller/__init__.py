@@ -52,14 +52,13 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
             f.write(ser.readline().decode('utf-8'))
             ##If GUI is closed, stop this thread so python can exit fully
             if self.stop.is_set():
-                print("The serial thread is being stopped")
+                self._logger.info("The serial thread is being shut down")
                 f.close();
                 return
 
 
 
     def on_after_startup(self):
-        self._logger.info("Hello World! (more: %s)" % self._settings.get(["save_path"]))
 
 
     def get_assets(self):
@@ -67,32 +66,16 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 	        js=["js/stretchingstagecontroller.js"]
 	    )
     def on_event(self, event, payload):
-        title = description = None
 
-        if event == octoprint.events.Events.UPLOAD:
-            title = "A new file was uploaded"
-            print(title)
-
-        elif event == octoprint.events.Events.PRINT_STARTED:
-            file = payload['name']
-
-            title = "Begin Data Collection"
-            description = "{file} has started printing".format(file=file)
-            print(title)
-            print(description)
+        if event == octoprint.events.Events.PRINT_STARTED:
             self.start_serial_thread()
 
 
         elif event == octoprint.events.Events.PRINT_DONE:
-            title = "Stop Data collection'"
-            description = "{file} finished printing, took {elapsed_time} seconds".format(file=file, elapsed_time=elapsed_time)
-            print(title)
             self.stop.set();
 
 
         elif event == octoprint.events.Events.PRINT_FAILED:
-            title = "Stop Data Collection"
-            print(title)
             self.stop.set();
 
 
@@ -126,7 +109,6 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
                 parameter = "set"
                 dir_exists = path.exists("{save_path}".format(**data))
                 file_exists = path.exists("{save_path}{file_name}".format(**data))
-                print("{save_path}{file_name}".format(**data))
                 if(dir_exists):
                     self._logger.info("Settings directory exists and is ready for readout")
                 else:
