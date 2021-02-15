@@ -6,6 +6,9 @@ import serial.tools.list_ports
 import os
 import os.path
 from os import path
+import threading
+import serial
+
 
 
 
@@ -17,11 +20,46 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 			    octoprint.plugin.SettingsPlugin,
                 octoprint.plugin.SimpleApiPlugin):
 
+    stop = threading.Event()
+
+    def on_stop(self):
+        self.stop.set();
+
+    def start_serial_thread(self):
+        threading.Thread(target=self.serial_thread).start()
+    
+    def serial_thread(self):
+        ##When this thread is initialized, open serial port
+        try:
+            ser = serial.Serial(
+            port='/dev/cu.usbserial-14220',\
+            baudrate=57600,\
+            parity=serial.PARITY_NONE,\
+            stopbits=serial.STOPBITS_ONE,\
+            bytesize=serial.EIGHTBITS,\
+                timeout=0)
+            self._logger.info("Connected to COM port for data readout")
+            f = open("myfile.txt", "x")
+
+        except:
+            self._logger.error("COM port not opened- data cannot be collected")
+            return
+
+        ser.flushInput()
+        ser.flushOutput()
+
+        while True:
+            f.write(ser.readline().decode('utf-8'))
+            ##If GUI is closed, stop this thread so python can exit fully
+            if self.stop.is_set():
+                print("The serial thread is being stopped")
+                f.close();
+                return
+
+
+
     def on_after_startup(self):
-        self.ports_available = ["port1", "port2", "port3"]##[comport.device for comport in serial.tools.list_ports.comports()]
-        port = 0;
         self._logger.info("Hello World! (more: %s)" % self._settings.get(["save_path"]))
-        self.selected_port = []
 
 
     def get_assets(self):
@@ -38,20 +76,25 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
         elif event == octoprint.events.Events.PRINT_STARTED:
             file = payload['name']
 
-            title = "A new print job was started"
+            title = "Begin Data Collection"
             description = "{file} has started printing".format(file=file)
             print(title)
             print(description)
+            self.start_serial_thread()
 
 
         elif event == octoprint.events.Events.PRINT_DONE:
-            title = "Print job finished"
+            title = "Stop Data collection'"
             description = "{file} finished printing, took {elapsed_time} seconds".format(file=file, elapsed_time=elapsed_time)
             print(title)
+            self.stop.set();
+
 
         elif event == octoprint.events.Events.PRINT_FAILED:
-            title = "Print failed hook test"
+            title = "Stop Data Collection"
             print(title)
+            self.stop.set();
+
 
         self._logger.info("Hello World! (more: %s)" % self._settings.get(["save_path"]))
 
