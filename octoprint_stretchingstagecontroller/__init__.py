@@ -32,7 +32,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
         ##When this thread is initialized, open serial port
         try:
             ser = serial.Serial(
-            port='/dev/cu.usbserial-14220',\
+            port=self._settings.get(["serial_read_port"]),\
             baudrate=57600,\
             parity=serial.PARITY_NONE,\
             stopbits=serial.STOPBITS_ONE,\
@@ -42,7 +42,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
             f = open("myfile.txt", "x")
 
         except:
-            self._logger.error("COM port not opened- data cannot be collected")
+            self._logger.error("COM port {x} not opened- data cannot be collected".format(x=self._settings.get(["serial_read_port"])))
             return
 
         ser.flushInput()
@@ -59,6 +59,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 
     def on_after_startup(self):
+        self._logger.info("Stretching Stage Controller Starting Up")
 
 
     def get_assets(self):
@@ -93,7 +94,9 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
     def get_settings_defaults(self):
     	return dict(
             save_path="~/",
-            port_options = [comport.device for comport in serial.tools.list_ports.comports()]
+            port_options = [comport.device for comport in serial.tools.list_ports.comports()],
+            serial_read_port = ""
+        
         )
 
     def get_api_commands(self):
