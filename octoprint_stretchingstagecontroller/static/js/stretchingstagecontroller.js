@@ -1,9 +1,11 @@
 $(function() {
     function stretchingstagecontrollerViewModel(parameters) {
         var self = this;
+
         self.name = "stretchingstagecontroller";
 
         self.settings = parameters[0];
+        self.printerStateViewModel = parameters[2];
 
         self.savePath = ko.observable();
 
@@ -13,6 +15,16 @@ $(function() {
         self.newFileName = ko.observable();
 
         self.portOptions = ko.observable();
+
+        //Wrap start print in new function for data check popup
+        const startPrint = self.printerStateViewModel.print;
+        const newStartPrint = function confirmSpoolSelectionBeforeStartPrint() {
+            alert("pre vaildate stuff");
+            console.log("Test")
+            startPrint();
+        };
+        self.printerStateViewModel.print = newStartPrint;
+
 
         self.updateFileName = function() {
             self.saveFileName(self.newFileName());
@@ -38,14 +50,18 @@ $(function() {
             .done(function(response) {
             })
 
-      }
+        }
+
 
     }
+
+
+
     OCTOPRINT_VIEWMODELS.push({
         construct: stretchingstagecontrollerViewModel,
 
           // e.g. loginStateViewModel, settingsViewModel, ...
-        dependencies: ["settingsViewModel", "connectionViewModel"],
+        dependencies: ["settingsViewModel", "connectionViewModel", "printerStateViewModel" ],
 
           // e.g. #settings_plugin_DetailedProgress, #tab_plugin_DetailedProgress, ...
         elements: ["#tab_plugin_stretchingstagecontroller"]
