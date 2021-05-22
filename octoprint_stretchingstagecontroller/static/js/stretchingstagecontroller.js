@@ -16,14 +16,39 @@ $(function() {
 
         self.portOptions = ko.observable();
 
+        self.dataPortConnected = ko.observable();
+
         //Wrap start print in new function for data check popup
         const startPrint = self.printerStateViewModel.print;
         const newStartPrint = function confirmSpoolSelectionBeforeStartPrint() {
-            alert("pre vaildate stuff");
-            console.log("Test")
-            startPrint();
+            showDialog("#sidebar_simpleDialog", function(dialog){
+                startPrint();
+                dialog.modal('hide');
+            });
         };
         self.printerStateViewModel.print = newStartPrint;
+
+        //Dialog modal code
+        function showDialog(dialogId, confirmFunction){
+                // show dialog
+                // sidebar_deleteFilesDialog
+                var myDialog = $(dialogId);
+                var confirmButton = $("button.btn-confirm", myDialog);
+                var cancelButton = $("button.btn-cancel", myDialog);
+                //var dialogTitle = $("h3.modal-title", editDialog);
+
+                confirmButton.unbind("click");
+                confirmButton.bind("click", function() {
+                    alert ("Clicked");
+                    confirmFunction(myDialog);
+                });
+                myDialog.modal({
+                    //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
+                }).css({
+                    width: 'auto',
+                    'margin-left': function() { return -($(this).width() /2); }
+                });
+        }
 
 
         self.updateFileName = function() {
