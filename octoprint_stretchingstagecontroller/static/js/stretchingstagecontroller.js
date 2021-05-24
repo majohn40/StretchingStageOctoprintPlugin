@@ -79,10 +79,6 @@ $(function() {
 
         self.onBeforeBinding = function() {
             //Retrieve save file path from settings
-            self.savePath(self.settings.settings.plugins.stretchingstagecontroller.save_path());
-
-            self.serialReadPort(self.settings.settings.plugins.stretchingstagecontroller.serial_read_port());
-
             console.log("Data Request Output");
             console.log(self.connectionViewModel.portOptions())
 
@@ -114,6 +110,24 @@ $(function() {
                 });
                 self.dataPortConnected(true);
 
+            } else if (data.message == "valid_filename"){
+                new PNotify({
+                    title: 'Filename Accepted',
+                    text: "New files will be named "+self.settings.settings.plugins.stretchingstagecontroller.save_path(),
+                    type: "info",
+                    hide: true
+                });
+                self.dataPortConnected(true);
+
+            } else if (data.message == "invalid_filename"){
+                new PNotify({
+                    title: 'Invalid Filename',
+                    text: "File already exists. The new data file will overwrite the existing file.",
+                    type: "error",
+                    hide: true
+                });
+                self.dataPortConnected(true);
+
             }
 
         }
@@ -121,7 +135,7 @@ $(function() {
 
         self.validateSettings = function() {
             self.updateFileName();
-            var  payload = {"save_path": self.savePath(), "file_name": self.saveFileName()};
+            var  payload = {"save_path": self.settings.settings.plugins.stretchingstagecontroller.save_path(), "file_name": self.saveFileName()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "validateSettings", payload)
             .done(function(response) {
             })

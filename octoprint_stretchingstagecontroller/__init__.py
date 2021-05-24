@@ -83,11 +83,10 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 	    )
     def on_event(self, event, payload):
         if event == octoprint.events.Events.PRINT_STARTED:
-            self._logger.info("Starting New Print--- serial read should start")
-            self._logger.info(self.com_connected)
             if self.com_connected:
                 self.read_serial_data = True;
                 self.f = open(self.save_path, "x")
+                self._logger.info("Start read from serial")
 
 
         if event == octoprint.events.Events.PRINT_DONE:
@@ -103,7 +102,6 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 
         if event == octoprint.events.Events.PRINT_CANCELLING:
-            self._logger.info("Canceling this print-- loop should stop ehre")
             if self.read_serial_data:
                 self.read_serial_data = False;
                 self.f.close();
@@ -144,8 +142,12 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
                     self._logger.info("*******WARNING******** Save directory for Stretching Stage Controller does not exist! Please pick a valid save directory")
                 if(file_exists):
                     self._logger.info("*******WARNING******** File you are attempting to write to already exists- file will be appended")
+                    self._plugin_manager.send_plugin_message(self._identifier, dict(message="invalid_filename"))
                 else:
                     self._logger.info("New file being created")
+                    self._plugin_manager.send_plugin_message(self._identifier, dict(message="valid_filename"))
+
+
 
         if command == "connectCOM":
             if "serial_read_port" in data:
