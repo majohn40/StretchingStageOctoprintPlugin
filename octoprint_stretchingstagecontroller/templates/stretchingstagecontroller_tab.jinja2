@@ -55,6 +55,8 @@
     </div>
     <div class="modal-body">
         <p>Data will be saved to </p>
+        <span data-bind="text: settings.settings.plugins.stretchingstagecontroller.save_path()"></span>
+        <span data-bind="text: saveFileName"></span>
     </div>
     <div class="modal-footer">
         <button class="btn btn-cancel" data-dismiss="modal" aria-hidden="true">Cancel</button>
