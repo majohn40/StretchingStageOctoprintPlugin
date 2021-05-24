@@ -23,6 +23,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
     stop = threading.Event()
     read_serial_data = False
     com_connected = False;
+    save_path = "default_save.txt"
 
     def on_shutdown(self):
         self.stop.set();
@@ -58,20 +59,16 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
         self.ser.flushInput()
         self.ser.flushOutput()
 
+
         while True:
+            if self.read_serial_data:
+                self._logger.info("Serial Data Reading")
+                self.f.write("10,20,30\n")#self.ser.readline().decode('utf-8'))
+            ##If GUI is closed, stop this thread so python can exit fully
             if self.stop.is_set():
                 self._logger.info("The serial thread is being shut down")
                 self.f.close();
                 self.com_connected = False;
-
-                return
-
-    def read_serial(self):
-        while self.read_serial_data:
-            self.f.write("10,20,30")#self.ser.readline().decode('utf-8'))
-            ##If GUI is closed, stop this thread so python can exit fully
-            if self.stop.is_set():
-                self.f.close();
                 return
 
 
@@ -87,23 +84,21 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
     def on_event(self, event, payload):
         if event == octoprint.events.Events.PRINT_STARTED:
             self._logger.info("Starting New Print--- serial read should start")
+            self._logger.info(self.com_connected)
             if self.com_connected:
                 self.read_serial_data = True;
-                self.f = open("myfile.txt", "x")
-                self.read_serial();
+                self.f = open(self.save_path, "x")
 
 
         if event == octoprint.events.Events.PRINT_DONE:
             if self.read_serial_data:
                 self.read_serial_data = False;
-                self.stop.set();
                 self.f.close();
 
 
         if event == octoprint.events.Events.PRINT_FAILED:
             if self.read_serial_data:
                 self.read_serial_data = False;
-                self.stop.set();
                 self.f.close();
 
 
@@ -111,7 +106,6 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
             self._logger.info("Canceling this print-- loop should stop ehre")
             if self.read_serial_data:
                 self.read_serial_data = False;
-                self.stop.set();
                 self.f.close();
 
 
