@@ -62,7 +62,6 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
         while True:
             if self.read_serial_data:
-                self._logger.info("Serial Data Reading")
                 self.f.write(self.ser.readline().decode('utf-8'))
             ##If GUI is closed, stop this thread so python can exit fully
             if self.stop.is_set():
@@ -85,9 +84,11 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
         if event == octoprint.events.Events.PRINT_STARTED:
             if self.com_connected:
                 if self.save_path != None:
-                    self.read_serial_data = True;
                     self.f = open(self.save_path, "x")
+                    self.read_serial_data = True;
                     self._logger.info("Start read from serial")
+                    self._plugin_manager.send_plugin_message(self._identifier, dict(message="data_collected"))
+
 
 
         if event == octoprint.events.Events.PRINT_DONE:

@@ -158,6 +158,8 @@ $(function() {
                     hide: true
                 });
                 self.dataPortConnected(false)
+            } else if (data.message == "data_collected"){
+                self.pathValidated(false);
             }
 
         }
