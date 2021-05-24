@@ -25,31 +25,35 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
     def on_stop(self):
         self.stop.set();
 
-    def start_serial_thread(self):
-        threading.Thread(target=self.serial_thread).start()
+    def start_serial_thread(self, port):
+        threading.Thread(target=self.serial_thread, args=(port,)).start()
     
-    def serial_thread(self):
+    def serial_thread(self, port):
         ##When this thread is initialized, open serial port
         try:
             ser = serial.Serial(
-            port=self._settings.get(["serial_read_port"]),\
+            #port=self._settings.get(["serial_read_port"]),\
+            port=port,\
             baudrate=57600,\
             parity=serial.PARITY_NONE,\
             stopbits=serial.STOPBITS_ONE,\
             bytesize=serial.EIGHTBITS,\
                 timeout=0)
             self._logger.info("Connected to COM port for data readout")
-            f = open("myfile.txt", "x")
+            # f = open("myfile.txt", "x")
+            self._plugin_manager.send_plugin_message(self._identifier, dict(message="ComConnected"))
+
 
         except:
-            self._logger.error("COM port {x} not opened- data cannot be collected".format(x=self._settings.get(["serial_read_port"])))
+            self._logger.error("COM port {x} not opened- data cannot be collected".format(x=port))
+            self._plugin_manager.send_plugin_message(self._identifier, dict(message="ComNotConnected"))
             return
 
         ser.flushInput()
         ser.flushOutput()
 
         while True:
-            f.write(ser.readline().decode('utf-8'))
+            # f.write(ser.readline().decode('utf-8'))
             ##If GUI is closed, stop this thread so python can exit fully
             if self.stop.is_set():
                 self._logger.info("The serial thread is being shut down")
@@ -93,15 +97,16 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
     def get_settings_defaults(self):
     	return dict(
-            save_path="~/",
-            port_options = [comport.device for comport in serial.tools.list_ports.comports()],
-            serial_read_port = ""
+            save_path="~/"
+            #port_options = [comport.device for comport in serial.tools.list_ports.comports()],
+           # serial_read_port = ""
         
         )
 
     def get_api_commands(self):
         return dict(
-            validateSettings=["save_path", "file_name"]
+            validateSettings=["save_path", "file_name"],
+            connectCOM=["serial_read_port"]
         )
 
     def on_api_command(self, command, data):
@@ -121,8 +126,10 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
                 else:
                     self._logger.info("New file being created")
 
-        elif command == "command2":
-            self._logger.info("command2 called, some_parameter is {some_parameter}".format(**data))
+        if command == "connectCOM":
+            if "serial_read_port" in data:
+                self._logger.info("connectCOM called. Port is {serial_read_port}".format(**data))
+                self.start_serial_thread("{serial_read_port}".format(**data));
 
 
 

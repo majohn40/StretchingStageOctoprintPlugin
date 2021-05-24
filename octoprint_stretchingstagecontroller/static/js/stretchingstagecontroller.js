@@ -5,11 +5,13 @@ $(function() {
         self.name = "stretchingstagecontroller";
 
         self.settings = parameters[0];
+        self.connectionViewModel = parameters[1];
         self.printerStateViewModel = parameters[2];
 
         self.savePath = ko.observable();
 
         self.serialReadPort = ko.observable();
+        self.newPort = ko.observable();
         
         self.saveFileName = ko.observable();
         self.newFileName = ko.observable();
@@ -21,10 +23,18 @@ $(function() {
         //Wrap start print in new function for data check popup
         const startPrint = self.printerStateViewModel.print;
         const newStartPrint = function confirmSpoolSelectionBeforeStartPrint() {
-            showDialog("#sidebar_simpleDialog", function(dialog){
-                startPrint();
-                dialog.modal('hide');
-            });
+            if(self.dataPortConnected){
+                showDialog("#sidebar_noComWarningDialog", function(dialog){
+                    startPrint();
+                    dialog.modal('hide');
+                });
+            } else if (!self.dataPortConnected){
+                showDialog("#sidebar_startPrintDialog", function(dialog){
+                    startPrint();
+                    dialog.modal('hide');
+                });   
+            }
+
         };
         self.printerStateViewModel.print = newStartPrint;
 
@@ -39,7 +49,6 @@ $(function() {
 
                 confirmButton.unbind("click");
                 confirmButton.bind("click", function() {
-                    alert ("Clicked");
                     confirmFunction(myDialog);
                 });
                 myDialog.modal({
@@ -51,8 +60,13 @@ $(function() {
         }
 
 
+
         self.updateFileName = function() {
             self.saveFileName(self.newFileName());
+        }
+
+        self.updatePortSelection=function(){
+            self.serialReadPort(self.newPort())
         }
 
         self.onBeforeBinding = function() {
@@ -61,13 +75,28 @@ $(function() {
 
             self.serialReadPort(self.settings.settings.plugins.stretchingstagecontroller.serial_read_port());
 
-            self.portOptions(self.settings.settings.plugins.stretchingstagecontroller.port_options());
+            console.log("Data Request Output");
+            console.log(self.connectionViewModel.portOptions())
 
             self.newFileName("text.txt");
             self.updateFileName();
 
+            self.dataPortConnected(false);
+
 
         }
+        self.onDataUpdaterPluginMessage = function(plugin, data){
+            if (plugin != "stretchingstagecontroller") {
+                return;
+            }
+            if(data.message == "ComNotConnected"){
+                self.dataPortConnected(false);
+            } else if (data.message == "ComConnected"){
+                self.dataPortConnected(true);
+                
+            }
+        }
+
 
         self.validateSettings = function() {
             var  payload = {"save_path": self.savePath(), "file_name": self.saveFileName()};
@@ -75,6 +104,14 @@ $(function() {
             .done(function(response) {
             })
 
+        }
+
+        self.connectCOM = function() {
+            self.updatePortSelection();
+            var payload = {"serial_read_port":self.serialReadPort()};
+            OctoPrint.simpleApiCommand("stretchingstagecontroller", "connectCOM", payload)
+            .done(function(response){
+            })
         }
 
 
