@@ -90,11 +90,24 @@ $(function() {
                 return;
             }
             if(data.message == "ComNotConnected"){
+                new PNotify({
+                    title: 'COM Not Connected',
+                    text: "The serial COM port was not connected",
+                    type: "error",
+                    hide: true
+                });
                 self.dataPortConnected(false);
             } else if (data.message == "ComConnected"){
+                new PNotify({
+                    title: 'COM Connected',
+                    text: "Ready for Serial Data Readout",
+                    type: "info",
+                    hide: true
+                });
                 self.dataPortConnected(true);
-                
+
             }
+
         }
 
 
