@@ -150,6 +150,14 @@ $(function() {
                     type: "error",
                     hide: true
                 });
+            } else if (data.message == "com_disconnected"){
+                new PNotify({
+                    title: 'COM Port Disconnected',
+                    text: "COM port has been succesfully disconnected",
+                    type: "info",
+                    hide: true
+                });
+                self.dataPortConnected(false)
             }
 
         }
@@ -168,6 +176,13 @@ $(function() {
             self.updatePortSelection();
             var payload = {"serial_read_port":self.serialReadPort()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "connectCOM", payload)
+            .done(function(response){
+            })
+        }
+        self.disconnectCOM = function() {
+            self.updatePortSelection();
+            var payload = {"serial_read_port":self.serialReadPort()};
+            OctoPrint.simpleApiCommand("stretchingstagecontroller", "disconnectCOM", payload)
             .done(function(response){
             })
         }

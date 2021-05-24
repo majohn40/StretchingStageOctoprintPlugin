@@ -6,7 +6,8 @@
             <div class="controls">
 <!--                 <select data-bind="options: portOptions, value: settings.plugins.stretchingstagecontroller.serial_read_port"></select> -->
                 <input type="text" data-bind="value: newPort"></input>
-                <button class="btn btn-primary" data-bind="click: connectCOM">{{ _('Connect COM') }}</button>
+                <button class="btn btn-primary" data-bind="click: connectCOM, enable: dataPortConnected() == false">{{ _('Connect COM') }}</button>
+                <button class="btn btn-primary" data-bind="click:disconnectCOM, enable: dataPortConnected() == true">{{ _('Disconnect COM') }}</button>
             </div>
         </div>
 	<p>Outfile name: </p>

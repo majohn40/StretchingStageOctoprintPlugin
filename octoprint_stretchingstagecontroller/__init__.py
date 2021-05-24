@@ -126,7 +126,9 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
     def get_api_commands(self):
         return dict(
             validateSettings=["save_path", "file_name"],
-            connectCOM=["serial_read_port"]
+            connectCOM=["serial_read_port"],
+            disconnectCOM=["serial_read_port"]
+
         )
 
     def on_api_command(self, command, data):
@@ -158,6 +160,10 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
             if "serial_read_port" in data:
                 self._logger.info("connectCOM called. Port is {serial_read_port}".format(**data))
                 self.start_serial_thread("{serial_read_port}".format(**data));
+        if command == "disconnectCOM":
+            self.stop.set();
+            self._plugin_manager.send_plugin_message(self._identifier, dict(message="com_disconnected"))
+
 
 
 
