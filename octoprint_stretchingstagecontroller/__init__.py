@@ -63,7 +63,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
         while True:
             if self.read_serial_data:
                 self._logger.info("Serial Data Reading")
-                self.f.write("10,20,30\n")#self.ser.readline().decode('utf-8'))
+                self.f.write(self.ser.readline().decode('utf-8'))
             ##If GUI is closed, stop this thread so python can exit fully
             if self.stop.is_set():
                 self._logger.info("The serial thread is being shut down")
