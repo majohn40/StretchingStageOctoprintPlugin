@@ -21,6 +21,8 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
                 octoprint.plugin.SimpleApiPlugin):
 
     stop = threading.Event()
+    read_serial_data = False
+    com_connected = False;
 
     def on_shutdown(self):
         self.stop.set();
@@ -34,7 +36,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
     def serial_thread(self, port):
         ##When this thread is initialized, open serial port
         try:
-            ser = serial.Serial(
+            self.ser = serial.Serial(
             #port=self._settings.get(["serial_read_port"]),\
             port=port,\
             baudrate=57600,\
@@ -43,24 +45,33 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
             bytesize=serial.EIGHTBITS,\
                 timeout=0)
             self._logger.info("Connected to COM port for data readout")
-            # f = open("myfile.txt", "x")
             self._plugin_manager.send_plugin_message(self._identifier, dict(message="ComConnected"))
+            self.com_connected = True;
 
 
         except:
             self._logger.error("COM port {x} not opened- data cannot be collected".format(x=port))
             self._plugin_manager.send_plugin_message(self._identifier, dict(message="ComNotConnected"))
+            self.com_connected = False;
             return
 
-        ser.flushInput()
-        ser.flushOutput()
+        self.ser.flushInput()
+        self.ser.flushOutput()
 
         while True:
-            # f.write(ser.readline().decode('utf-8'))
-            ##If GUI is closed, stop this thread so python can exit fully
             if self.stop.is_set():
                 self._logger.info("The serial thread is being shut down")
-                #f.close();
+                self.f.close();
+                self.com_connected = False;
+
+                return
+
+    def read_serial(self):
+        while self.read_serial_data:
+            self.f.write("10,20,30")#self.ser.readline().decode('utf-8'))
+            ##If GUI is closed, stop this thread so python can exit fully
+            if self.stop.is_set():
+                self.f.close();
                 return
 
 
@@ -74,23 +85,34 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 	        js=["js/stretchingstagecontroller.js"]
 	    )
     def on_event(self, event, payload):
-
         if event == octoprint.events.Events.PRINT_STARTED:
-            self.read_serial_data = True;
+            self._logger.info("Starting New Print--- serial read should start")
+            if self.com_connected:
+                self.read_serial_data = True;
+                self.f = open("myfile.txt", "x")
+                self.read_serial();
 
 
-        elif event == octoprint.events.Events.PRINT_DONE:
-            self.read_serial_data = False;
-            self.stop.set();
+        if event == octoprint.events.Events.PRINT_DONE:
+            if self.read_serial_data:
+                self.read_serial_data = False;
+                self.stop.set();
+                self.f.close();
 
 
-        elif event == octoprint.events.Events.PRINT_FAILED:
-            self.read_serial_data = False;
-            self.stop.set();
+        if event == octoprint.events.Events.PRINT_FAILED:
+            if self.read_serial_data:
+                self.read_serial_data = False;
+                self.stop.set();
+                self.f.close();
 
 
-        self._logger.info("Hello World! (more: %s)" % self._settings.get(["save_path"]))
-
+        if event == octoprint.events.Events.PRINT_CANCELLING:
+            self._logger.info("Canceling this print-- loop should stop ehre")
+            if self.read_serial_data:
+                self.read_serial_data = False;
+                self.stop.set();
+                self.f.close();
 
 
     def get_template_configs(self):

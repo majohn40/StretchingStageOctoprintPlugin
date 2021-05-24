@@ -1,28 +1,19 @@
 <!DOCTYPE html>
 <body>
 	<h1> Stretching Stage Controller </h1>
-	<h4> Data Export Details (can be adjusted in settings)</h4>
-		<p>Outfiles will be saved in: <span data-bind="text: savePath"></span></p>
-		<br>
-		<p>Outfiles will be named: <span data-bind="text: saveFileName"></span></p>
-		<br>
-		<p>Outfile name: </p>
-		<div class="input-append">
-	    	<input type="text" class="input-xxlarge" data-bind="value: newFileName">
-	    	<button class="btn btn-primary" data-bind="click: updateFileName">{{ _('Update') }}</button>
-		</div>
-		<button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Validate Settings') }}</button>
-
 		<label class="control-label">{{ _('Serial Port') }}</label>
         <div class="input-append">
             <div class="controls">
 <!--                 <select data-bind="options: portOptions, value: settings.plugins.stretchingstagecontroller.serial_read_port"></select> -->
                 <input type="text" data-bind="value: newPort"></input>
-                 <button class="btn btn-primary" data-bind="click: connectCOM">{{ _('Connect COM') }}</button>
+                <button class="btn btn-primary" data-bind="click: connectCOM">{{ _('Connect COM') }}</button>
             </div>
         </div>
-
-
+	<p>Outfile name: </p>
+		<div class="input-append">
+	    	<input type="text" data-bind="value: newFileName">
+	    	<button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Validate Filename') }}</button>
+		</div>
 </body>
 
 <!-- Modal-Dialog -->

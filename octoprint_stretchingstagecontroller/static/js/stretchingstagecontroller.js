@@ -120,6 +120,7 @@ $(function() {
 
 
         self.validateSettings = function() {
+            self.updateFileName();
             var  payload = {"save_path": self.savePath(), "file_name": self.saveFileName()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "validateSettings", payload)
             .done(function(response) {
