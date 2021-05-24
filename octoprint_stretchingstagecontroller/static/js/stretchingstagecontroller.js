@@ -19,17 +19,25 @@ $(function() {
         self.portOptions = ko.observable();
 
         self.dataPortConnected = ko.observable();
+        self.dataPortConnected(false);
 
         //Wrap start print in new function for data check popup
         const startPrint = self.printerStateViewModel.print;
-        const newStartPrint = function confirmSpoolSelectionBeforeStartPrint() {
-            if(self.dataPortConnected){
-                showDialog("#sidebar_noComWarningDialog", function(dialog){
+        const newStartPrint = function validateCOMBeforeStartingPrint() {
+            console.log(self.dataPortConnected());
+            if(self.dataPortConnected() == true){
+                showDialog("#sidebar_startPrintDialog", function(dialog){
                     startPrint();
                     dialog.modal('hide');
+                    new PNotify({
+                        title: 'Serial Data Collection Started',
+                        text: "Reading Serial Data",
+                        type: "info",
+                        hide: true
+                    });
                 });
-            } else if (!self.dataPortConnected){
-                showDialog("#sidebar_startPrintDialog", function(dialog){
+            } else {
+                showDialog("#sidebar_noComWarningDialog", function(dialog){
                     startPrint();
                     dialog.modal('hide');
                 });   

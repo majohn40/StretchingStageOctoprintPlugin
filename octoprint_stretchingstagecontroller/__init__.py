@@ -22,6 +22,9 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
     stop = threading.Event()
 
+    def on_shutdown(self):
+        self.stop.set();
+
     def on_stop(self):
         self.stop.set();
 
@@ -57,7 +60,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
             ##If GUI is closed, stop this thread so python can exit fully
             if self.stop.is_set():
                 self._logger.info("The serial thread is being shut down")
-                f.close();
+                #f.close();
                 return
 
 
@@ -73,14 +76,16 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
     def on_event(self, event, payload):
 
         if event == octoprint.events.Events.PRINT_STARTED:
-            self.start_serial_thread()
+            self.read_serial_data = True;
 
 
         elif event == octoprint.events.Events.PRINT_DONE:
+            self.read_serial_data = False;
             self.stop.set();
 
 
         elif event == octoprint.events.Events.PRINT_FAILED:
+            self.read_serial_data = False;
             self.stop.set();
 
 
