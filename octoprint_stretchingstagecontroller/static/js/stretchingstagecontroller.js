@@ -8,8 +8,6 @@ $(function() {
         self.connectionViewModel = parameters[1];
         self.printerStateViewModel = parameters[2];
 
-        self.savePath = ko.observable();
-
         self.serialReadPort = ko.observable();
         self.newPort = ko.observable();
         
@@ -113,7 +111,7 @@ $(function() {
             } else if (data.message == "valid_filename"){
                 new PNotify({
                     title: 'Filename Accepted',
-                    text: "New files will be named "+self.settings.settings.plugins.stretchingstagecontroller.save_path(),
+                    text: "File will be saved at "+self.settings.settings.plugins.stretchingstagecontroller.save_path()+self.saveFileName(),
                     type: "info",
                     hide: true
                 });
@@ -123,6 +121,24 @@ $(function() {
                 new PNotify({
                     title: 'Invalid Filename',
                     text: "File already exists. The new data file will overwrite the existing file.",
+                    type: "error",
+                    hide: true
+                });
+                self.dataPortConnected(true);
+
+            } else if (data.message == "path_does_not_exist"){
+                new PNotify({
+                    title: 'Path Does Not Exist',
+                    text: "You are trying to save files to a nonexistent path. Please edit the save path in Octoprint settings to a valid path",
+                    type: "error",
+                    hide: true
+                });
+                self.dataPortConnected(true);
+
+            } else if (data.message == "path_missing_slash"){
+                new PNotify({
+                    title: 'Path must end in /',
+                    text: "You are trying to save files to an invalid path. Path must end in /. Please edit the save path in Octoprint settings to a valid path",
                     type: "error",
                     hide: true
                 });

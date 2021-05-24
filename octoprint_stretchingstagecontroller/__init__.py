@@ -136,16 +136,21 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
                 parameter = "set"
                 dir_exists = path.exists("{save_path}".format(**data))
                 file_exists = path.exists("{save_path}{file_name}".format(**data))
-                if(dir_exists):
-                    self._logger.info("Settings directory exists and is ready for readout")
+                if "{save_path}".format(**data)[-1] != "/":
+                    self._plugin_manager.send_plugin_message(self._identifier, dict(message="path_missing_slash"))
                 else:
-                    self._logger.info("*******WARNING******** Save directory for Stretching Stage Controller does not exist! Please pick a valid save directory")
-                if(file_exists):
-                    self._logger.info("*******WARNING******** File you are attempting to write to already exists- file will be appended")
-                    self._plugin_manager.send_plugin_message(self._identifier, dict(message="invalid_filename"))
-                else:
-                    self._logger.info("New file being created")
-                    self._plugin_manager.send_plugin_message(self._identifier, dict(message="valid_filename"))
+                    if(dir_exists):
+                        self._logger.info("Settings directory exists and is ready for readout")
+                        if(file_exists):
+                            self._logger.info("*******WARNING******** File you are attempting to write to already exists- file will be appended")
+                            self._plugin_manager.send_plugin_message(self._identifier, dict(message="invalid_filename"))
+                        else:
+                            self._logger.info("New file being created")
+                            self._plugin_manager.send_plugin_message(self._identifier, dict(message="valid_filename"))
+                    else:
+                        self._logger.info("*******WARNING******** Save directory for Stretching Stage Controller does not exist! Please pick a valid save directory")
+                        self._plugin_manager.send_plugin_message(self._identifier, dict(message="path_does_not_exist"))
+
 
 
 
