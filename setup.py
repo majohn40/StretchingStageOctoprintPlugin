@@ -18,7 +18,7 @@ plugin_version = "1.0.0"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
-plugin_description = """An interface for controlling and collecting data from a stretching stage using octoprint"""
+plugin_description = """An interface for controlling and collecting data from a Stretching Stage using OctoPrint"""
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
 plugin_author = "Megan Johnson"
