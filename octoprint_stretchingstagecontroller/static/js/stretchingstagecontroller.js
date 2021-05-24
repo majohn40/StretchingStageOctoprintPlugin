@@ -19,12 +19,15 @@ $(function() {
         self.dataPortConnected = ko.observable();
         self.dataPortConnected(false);
 
+        self.pathValidated = ko.observable();
+        self.pathValidated(false);
+
         //Wrap start print in new function for data check popup
         const startPrint = self.printerStateViewModel.print;
         const newStartPrint = function validateCOMBeforeStartingPrint() {
-            console.log(self.dataPortConnected());
             if(self.dataPortConnected() == true){
-                showDialog("#sidebar_startPrintDialog", function(dialog){
+                if(self.pathValidated() == true){
+                    showDialog("#sidebar_startPrintDialog", function(dialog){
                     startPrint();
                     dialog.modal('hide');
                     new PNotify({
@@ -34,6 +37,13 @@ $(function() {
                         hide: true
                     });
                 });
+                } else{
+                showDialog("#sidebar_filePathNotValidated", function(dialog){
+                    startPrint();
+                    dialog.modal('hide');
+                });    
+                }
+
             } else {
                 showDialog("#sidebar_noComWarningDialog", function(dialog){
                     startPrint();
@@ -115,16 +125,15 @@ $(function() {
                     type: "info",
                     hide: true
                 });
-                self.dataPortConnected(true);
+                self.pathValidated(true);
 
             } else if (data.message == "invalid_filename"){
                 new PNotify({
                     title: 'Invalid Filename',
-                    text: "File already exists. The new data file will overwrite the existing file.",
+                    text: "File already exists. Please select new filename or delete conflicting file.",
                     type: "error",
                     hide: true
                 });
-                self.dataPortConnected(true);
 
             } else if (data.message == "path_does_not_exist"){
                 new PNotify({
@@ -133,7 +142,6 @@ $(function() {
                     type: "error",
                     hide: true
                 });
-                self.dataPortConnected(true);
 
             } else if (data.message == "path_missing_slash"){
                 new PNotify({
@@ -142,8 +150,6 @@ $(function() {
                     type: "error",
                     hide: true
                 });
-                self.dataPortConnected(true);
-
             }
 
         }
