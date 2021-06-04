@@ -1,6 +1,6 @@
 $(function() {
     function stretchingstagecontrollerViewModel(parameters) {
-        var self = this;
+        let self = this;
 
         self.name = "stretchingstagecontroller";
 
@@ -10,7 +10,7 @@ $(function() {
 
         self.serialReadPort = ko.observable();
         self.newPort = ko.observable();
-        
+
         self.saveFileName = ko.observable();
         self.newFileName = ko.observable();
 
@@ -28,27 +28,27 @@ $(function() {
             if(self.dataPortConnected() == true){
                 if(self.pathValidated() == true){
                     showDialog("#sidebar_startPrintDialog", function(dialog){
-                    startPrint();
-                    dialog.modal('hide');
-                    new PNotify({
-                        title: 'Serial Data Collection Started',
-                        text: "Reading Serial Data",
-                        type: "info",
-                        hide: true
+                        startPrint();
+                        dialog.modal('hide');
+                        new PNotify({
+                            title: 'Serial Data Collection Started',
+                            text: "Reading Serial Data",
+                            type: "info",
+                            hide: true
+                        });
                     });
-                });
                 } else{
-                showDialog("#sidebar_filePathNotValidated", function(dialog){
-                    startPrint();
-                    dialog.modal('hide');
-                });    
+                    showDialog("#sidebar_filePathNotValidated", function(dialog){
+                        startPrint();
+                        dialog.modal('hide');
+                    });
                 }
 
             } else {
                 showDialog("#sidebar_noComWarningDialog", function(dialog){
                     startPrint();
                     dialog.modal('hide');
-                });   
+                });
             }
 
         };
@@ -56,26 +56,23 @@ $(function() {
 
         //Dialog modal code
         function showDialog(dialogId, confirmFunction){
-                // show dialog
-                // sidebar_deleteFilesDialog
-                var myDialog = $(dialogId);
-                var confirmButton = $("button.btn-confirm", myDialog);
-                var cancelButton = $("button.btn-cancel", myDialog);
-                //var dialogTitle = $("h3.modal-title", editDialog);
+            // show dialog
+            // sidebar_deleteFilesDialog
+            let myDialog = $(dialogId);
+            let confirmButton = $("button.btn-confirm", myDialog);
+            let cancelButton = $("button.btn-cancel", myDialog);
 
-                confirmButton.unbind("click");
-                confirmButton.bind("click", function() {
-                    confirmFunction(myDialog);
-                });
-                myDialog.modal({
-                    //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
-                }).css({
-                    width: 'auto',
-                    'margin-left': function() { return -($(this).width() /2); }
-                });
+            confirmButton.unbind("click");
+            confirmButton.bind("click", function() {
+                confirmFunction(myDialog);
+            });
+            myDialog.modal({
+                //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
+            }).css({
+                width: 'auto',
+                'margin-left': function() { return -($(this).width() /2); }
+            });
         }
-
-
 
         self.updateFileName = function() {
             self.saveFileName(self.newFileName());
@@ -94,113 +91,118 @@ $(function() {
             self.updateFileName();
 
             self.dataPortConnected(false);
-
-
         }
+
         self.onDataUpdaterPluginMessage = function(plugin, data){
             if (plugin != "stretchingstagecontroller") {
                 return;
             }
-            if(data.message == "ComNotConnected"){
-                new PNotify({
-                    title: 'COM Not Connected',
-                    text: "The serial COM port was not connected",
-                    type: "error",
-                    hide: true
-                });
-                self.dataPortConnected(false);
-            } else if (data.message == "ComConnected"){
-                new PNotify({
-                    title: 'COM Connected',
-                    text: "Ready for Serial Data Readout",
-                    type: "info",
-                    hide: true
-                });
-                self.dataPortConnected(true);
+            let notification = {};
 
-            } else if (data.message == "valid_filename"){
-                new PNotify({
-                    title: 'Filename Accepted',
-                    text: "File will be saved at "+self.settings.settings.plugins.stretchingstagecontroller.save_path()+self.saveFileName(),
-                    type: "info",
-                    hide: true
-                });
-                self.pathValidated(true);
+            notification.buttons =
+                {
+                    closer_hover: false,
+                    show_on_nonblock: false
+                };
 
-            } else if (data.message == "invalid_filename"){
-                new PNotify({
-                    title: 'Invalid Filename',
-                    text: "File already exists. Please select new filename or delete conflicting file.",
-                    type: "error",
-                    hide: true
-                });
+            switch(data.message) {
+                case "ComNotConnected":
+                    notification.title = 'COM Not Connected';
+                    notification.text =  "Connection to the following COM port could not be established: " + data.port;
+                    notification.type = "error";
+                    notification.hide = true;
+                    self.dataPortConnected(false);
+                    break;
 
-            } else if (data.message == "path_does_not_exist"){
-                new PNotify({
-                    title: 'Path Does Not Exist',
-                    text: "You are trying to save files to a nonexistent path. Please edit the save path in Octoprint settings to a valid path",
-                    type: "error",
-                    hide: true
-                });
+                case "ComConnected":
+                    notification.title =  'COM Connected';
+                    notification.text =  "Ready for Serial Data Readout";
+                    notification.type = "info";
+                    notification.hide = true;
+                    self.dataPortConnected(true);
+                    break;
 
-            } else if (data.message == "path_missing_slash"){
-                new PNotify({
-                    title: 'Path must end in /',
-                    text: "You are trying to save files to an invalid path. Path must end in /. Please edit the save path in Octoprint settings to a valid path",
-                    type: "error",
-                    hide: true
-                });
-            } else if (data.message == "com_disconnected"){
-                new PNotify({
-                    title: 'COM Port Disconnected',
-                    text: "COM port has been succesfully disconnected",
-                    type: "info",
-                    hide: true
-                });
-                self.dataPortConnected(false)
-            } else if (data.message == "data_collected"){
-                self.pathValidated(false);
+                case "valid_filename":
+                    notification.title =  'Filename Accepted';
+                    notification.text =  "File will be saved at " + self.settings.settings.plugins.stretchingstagecontroller.save_path() + self.saveFileName();
+                    notification.type = "info";
+                    notification.hide = true;
+                    self.pathValidated(true);
+                    break;
+
+                case "invalid_filename":
+                    notification.title =  'Invalid Filename';
+                    notification.text =  "File already exists. Please select new filename or delete conflicting file.";
+                    notification.type = "error";
+                    notification.hide = true;
+                    break;
+
+                case "path_does_not_exist":
+                    notification.title =  'Path Does Not Exist';
+                    notification.text =  "You are trying to save files to a nonexistent path. Please edit the save path in Octoprint settings to a valid path";
+                    notification.type = "error";
+                    notification.hide = true;
+                    break;
+
+                case "path_missing_slash":
+                    notification.title =  'Path must end in /';
+                    notification.text =  "You are trying to save files to an invalid path. Path must end in /. Please edit the save path in Octoprint settings to a valid path";
+                    notification.type = "error";
+                    notification.hide = true
+                    break;
+
+                case "com_disconnected":
+                    notification.title =  'COM Port Disconnected';
+                    notification.text =  "COM port has been successfully disconnected";
+                    notification.type = "info";
+                    notification.hide = true
+                    self.dataPortConnected(false)
+                    break;
+
+                case "data_collected":
+                    self.pathValidated(false);
+                    break;
             }
+
+            new PNotify(notification);
 
         }
 
 
         self.validateSettings = function() {
             self.updateFileName();
-            var  payload = {"save_path": self.settings.settings.plugins.stretchingstagecontroller.save_path(), "file_name": self.saveFileName()};
+            let  payload = {"save_path": self.settings.settings.plugins.stretchingstagecontroller.save_path(), "file_name": self.saveFileName()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "validateSettings", payload)
-            .done(function(response) {
-            })
-
+                .done(function(response) {
+                })
         }
 
         self.connectCOM = function() {
             self.updatePortSelection();
-            var payload = {"serial_read_port":self.serialReadPort()};
+            let payload = {"serial_read_port":self.serialReadPort()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "connectCOM", payload)
-            .done(function(response){
-            })
+                .done(function(response){
+                })
         }
+
         self.disconnectCOM = function() {
             self.updatePortSelection();
-            var payload = {"serial_read_port":self.serialReadPort()};
+            let payload = {"serial_read_port":self.serialReadPort()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "disconnectCOM", payload)
-            .done(function(response){
-            })
+                .done(function(response){
+                })
         }
 
-
     }
-
 
 
     OCTOPRINT_VIEWMODELS.push({
         construct: stretchingstagecontrollerViewModel,
 
-          // e.g. loginStateViewModel, settingsViewModel, ...
+        // e.g. loginStateViewModel, settingsViewModel, ...
         dependencies: ["settingsViewModel", "connectionViewModel", "printerStateViewModel" ],
 
-          // e.g. #settings_plugin_DetailedProgress, #tab_plugin_DetailedProgress, ...
+        // e.g. #settings_plugin_DetailedProgress, #tab_plugin_DetailedProgress, ...
         elements: ["#tab_plugin_stretchingstagecontroller"]
     });
 });
