@@ -14,7 +14,6 @@ import serial
 global all_coms_opened
 
 
-
 class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 							octoprint.plugin.TemplatePlugin,
 							octoprint.plugin.AssetPlugin,
@@ -25,6 +24,8 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 	read_serial_data = False
 	com_connected = False
 	save_path = None
+
+	comPorts = {}
 
 	def on_shutdown(self):
 		self.stop.set()
@@ -37,9 +38,11 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 	def serial_thread(self, port):
 		global all_coms_opened
+		current_com = self.comPorts[port]
+
 		# When this thread is initialized, open serial port
 		try:
-			self.ser = serial.Serial(
+			current_com.ser = serial.Serial(
 				port=port,
 				baudrate=57600,
 				parity=serial.PARITY_NONE,
@@ -48,17 +51,16 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 				timeout=0)
 			self._logger.info("Connected to COM port {x} for data readout".format(x=port))
 			self._plugin_manager.send_plugin_message(self._identifier, dict(message="ComConnected", port=port))
-			self.com_connected = True
-
+			current_com["com_connected"] = True
 		except:
 			self._logger.error("COM port {x} could not be opened - data cannot be collected".format(x=port))
 			self._plugin_manager.send_plugin_message(self._identifier, dict(message="ComNotConnected", port=port))
-			self.com_connected = False
+			current_com["com_connected"] = False
 			all_coms_opened = False
 			return
 
-		self.ser.flushInput()
-		self.ser.flushOutput()
+		current_com.ser.flushInput()
+		current_com.ser.flushOutput()
 
 		if not all_coms_opened:
 			self._logger.error("One of the other com ports failed to connect or lost connection.")
@@ -66,20 +68,24 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 		self.validate_save_path(port)
 
-		self.f = open(self.save_path, "x")
+		# if self.f:
+		# 	self.f.close()
+
+		current_com.f = open(current_com.save_path, "x")
 
 		while True:
 			if not all_coms_opened:
-				self._logger.error("One of the other com ports failed to connect or lost connection.")
+				self._logger.error("One of the com ports failed to connect or lost connection.")
 				return
 
-			if self.read_serial_data:
-				self.f.write(self.ser.readline().decode('utf-8'))
+			if current_com.read_serial_data:
+				current_com.f.write(current_com.ser.readline().decode('utf-8'))
+
 			# If GUI is closed, stop this thread so python can exit fully
 			if self.stop.is_set():
-				self._logger.info("The serial thread is being shut down.")
-				self.f.close()
-				self.com_connected = False
+				self._logger.info("The serial thread for port {} is being shut down.".format(port))
+				current_com.f.close()
+				current_com.com_connected = False
 				return
 
 	def on_after_startup(self):
@@ -92,28 +98,38 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 	def on_event(self, event, payload):
 		if event == octoprint.events.Events.PRINT_STARTED:
-			if self.com_connected:
-				if self.save_path is not None:
-					self.read_serial_data = True
-					self._logger.info("Starting read from serial...")
-					self._plugin_manager.send_plugin_message(self._identifier, dict(message="data_collected"))
+			for p in self.comPorts:
+				curr_com = self.comPorts[p]
+				if curr_com["com_connected"]:
+					if curr_com["save_path"] is not None:
+						if not curr_com["f"]:
+							curr_com["f"] = open(curr_com["save_path"].save_path, "x")
+						curr_com["ead_serial_data"] = True
+						self._logger.info("Starting read from serial port {}...".format(p))
+						self._plugin_manager.send_plugin_message(self._identifier, dict(message="data_collected"))
 
 		if event == octoprint.events.Events.PRINT_DONE:
-			if self.read_serial_data:
-				self.read_serial_data = False
-				self.f.close()
-				self._logger.info("Print complete.")
+			for p in self.comPorts:
+				curr_com = self.comPorts[p]
+				if curr_com["read_serial_data"]:
+					curr_com["read_serial_data"] = False
+					curr_com["f"].close()
+			self._logger.info("Print complete.")
 
 		if event == octoprint.events.Events.PRINT_FAILED:
-			if self.read_serial_data:
-				self.read_serial_data = False
-				self.f.close()
-				self._logger.info("Print failed.")
+			for p in self.comPorts:
+				curr_com = self.comPorts[p]
+				if curr_com["read_serial_data"]:
+					curr_com["read_serial_data"] = False
+					curr_com["f"].close()
+					self._logger.info("Print failed.")
 
 		if event == octoprint.events.Events.PRINT_CANCELLING:
-			if self.read_serial_data:
-				self.read_serial_data = False
-				self.f.close()
+			for p in self.comPorts:
+				curr_com = self.comPorts[p]
+				if curr_com["read_serial_data"]:
+					curr_com["read_serial_data"] = False
+					curr_com["f"].close()
 				self._logger.info("Print cancelled.")
 
 	def get_template_configs(self):
@@ -135,7 +151,6 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 			validateSettings=["save_path", "file_name"],
 			connectCOM=["serial_read_port"],
 			disconnectCOM=["serial_read_port"]
-
 		)
 
 	def on_api_command(self, command, data):
@@ -155,7 +170,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 								"*******WARNING******** File you are attempting to write to already exists- file will be appended")
 							self._plugin_manager.send_plugin_message(self._identifier, dict(message="invalid_filename"))
 						else:
-							self._logger.info("New file being created")
+							self._logger.info("New file being created.")
 							self._plugin_manager.send_plugin_message(self._identifier, dict(message="valid_filename"))
 							self.save_path = "{save_path}{file_name}".format(**data)
 					else:
@@ -181,16 +196,18 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 			self._plugin_manager.send_plugin_message(self._identifier, dict(message="com_disconnected"))
 
 	def validate_save_path(self, port):
+		escaped_port = re.sub('[^A-Za-z0-9]+', '_', port)
 		ext_index = self.save_path.index(".")
-		insert_suffix = re.sub('[^A-Za-z0-9]+', '_', port)
-		self.save_path = self.save_path[:ext_index] + insert_suffix + self.save_path[ext_index:]
-		self._logger.info("Save path modified for each com port: " + self.save_path)
+		self.save_path = self.save_path[:ext_index] + escaped_port + self.save_path[ext_index:]
+		self._logger.info("Save path modified for com port: {}".format(self.save_path))
 		append_num = 1
 		ext_index = self.save_path.index(".")
-		while path.exists(self.save_path):
-			self.save_path = self.save_path[:ext_index] + "(" + str(append_num) + ")" + self.save_path[ext_index:]
+		new_save_path = self.save_path
+		while path.exists(new_save_path):
+			new_save_path = self.save_path[:ext_index] + "(" + str(append_num) + ")" + self.save_path[ext_index:]
 			append_num += 1
-		self._logger.info("Final save paths: " + self.save_path)
+		self.save_path = new_save_path
+		self._logger.info("Final save paths: {}".format(self.save_path))
 
 
 __plugin_name__ = "Stretching Stage Controller"
