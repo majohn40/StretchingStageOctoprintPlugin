@@ -124,7 +124,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 	def get_settings_defaults(self):
 		return dict(
-			save_path="~/"
+			save_path="/home/pi"
 			# port_options = [comport.device for comport in serial.tools.list_ports.comports()],
 			# serial_read_port = ""
 
@@ -168,8 +168,9 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 			if "serial_read_port" in data:
 				port_list = data["serial_read_port"].split(',')
 				ports = [p.strip() for p in port_list]
-				print(ports)
+				self._logger.info(ports)
 				self._logger.info("connectCOM called. Port(s) detected: {}".format(ports))
+				global all_coms_opened
 				all_coms_opened = True
 				for p in ports:
 					data["serial_read_port"] = p
@@ -183,13 +184,13 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 		ext_index = self.save_path.index(".")
 		insert_suffix = re.sub('[^A-Za-z0-9]+', '_', port)
 		self.save_path = self.save_path[:ext_index] + insert_suffix + self.save_path[ext_index:]
-		print("Save path modified for each com port: " + self.save_path)
+		self._logger.info("Save path modified for each com port: " + self.save_path)
 		append_num = 1
 		ext_index = self.save_path.index(".")
 		while path.exists(self.save_path):
 			self.save_path = self.save_path[:ext_index] + "(" + str(append_num) + ")" + self.save_path[ext_index:]
 			append_num += 1
-		print("Final save paths: " + self.save_path)
+		self._logger.info("Final save paths: " + self.save_path)
 
 
 __plugin_name__ = "Stretching Stage Controller"
