@@ -14,7 +14,8 @@ $(function() {
         self.saveFileName = ko.observable();
         self.newFileName = ko.observable();
 
-        self.portOptions = ko.observable();
+        self.selectedPorts = ko.observableArray([]);
+        self.listOfPorts = ko.observableArray([]);
 
         self.dataPortConnected = ko.observable();
         self.dataPortConnected(false);
@@ -22,7 +23,7 @@ $(function() {
         self.pathValidated = ko.observable();
         self.pathValidated(false);
 
-        //Wrap start print in new function for data check popup
+        // Wrap start print in new function for data check popup
         const startPrint = self.printerStateViewModel.print;
         const newStartPrint = function validateCOMBeforeStartingPrint() {
             if(self.dataPortConnected() == true){
@@ -78,17 +79,22 @@ $(function() {
             self.saveFileName(self.newFileName());
         }
 
+        self.updateSelectedPorts=function(){
+            self.selectedPorts(self.listOfPorts())
+        }
+
         self.updatePortSelection=function(){
             self.serialReadPort(self.newPort())
         }
 
         self.onBeforeBinding = function() {
-            //Retrieve save file path from settings
+            // Retrieve save file path from settings
             console.log("Data Request Output");
             console.log(self.connectionViewModel.portOptions())
 
             self.newFileName("text.txt");
             self.updateFileName();
+            self.fetchPorts();
 
             self.dataPortConnected(false);
         }
@@ -106,6 +112,7 @@ $(function() {
                 };
 
             switch(data.message) {
+
                 case "ComNotConnected":
                     notification.title = 'COM Not Connected';
                     notification.text =  "Connection to the following COM port could not be established: " + data.port;
@@ -120,6 +127,10 @@ $(function() {
                     notification.type = "info";
                     notification.hide = true;
                     self.dataPortConnected(true);
+                    break;
+
+                case "ports_fetched":
+                    self.listOfPorts(data.ports);
                     break;
 
                 case "valid_filename":
@@ -163,9 +174,19 @@ $(function() {
                     self.pathValidated(false);
                     break;
             }
+            if(notification.title){
+                new PNotify(notification);
+            }
 
-            new PNotify(notification);
         }
+
+        self.fetchPorts = function() {
+            let payload = {}
+            OctoPrint.simpleApiCommand("stretchingstagecontroller", "fetchPorts", payload)
+                .done(function(response){
+                })
+        }
+
 
         self.validateSettings = function() {
             self.updateFileName();
@@ -177,12 +198,20 @@ $(function() {
         }
 
         self.connectCOM = function() {
-            self.updatePortSelection();
-            let payload = {"serial_read_port":self.serialReadPort()};
+            self.updateSelectedPorts();
+            let payload = {"serial_read_port":self.selectedPorts()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "connectCOM", payload)
                 .done(function(response){
                 })
         }
+
+        // self.connectCOM = function() {
+        //     self.updatePortSelection();
+        //     let payload = {"serial_read_port":self.serialReadPort()};
+        //     OctoPrint.simpleApiCommand("stretchingstagecontroller", "connectCOM", payload)
+        //         .done(function(response){
+        //         })
+        // }
 
         self.disconnectCOM = function() {
             self.updatePortSelection();
