@@ -16,6 +16,7 @@ $(function() {
 
         self.selectedPorts = ko.observableArray([]);
         self.listOfPorts = ko.observableArray([]);
+        self.connectedPorts = ko.observableArray([]);
 
         self.dataPortConnected = ko.observable();
         self.dataPortConnected(false);
@@ -33,7 +34,7 @@ $(function() {
                         dialog.modal('hide');
                         new PNotify({
                             title: 'Serial Data Collection Started',
-                            text: "Reading Serial Data",
+                            text: "Reading Serial Data...",
                             type: "info",
                             hide: true
                         });
@@ -79,14 +80,6 @@ $(function() {
             self.saveFileName(self.newFileName());
         }
 
-        self.updateSelectedPorts=function(){
-            self.selectedPorts(self.listOfPorts())
-        }
-
-        self.updatePortSelection=function(){
-            self.serialReadPort(self.newPort())
-        }
-
         self.onBeforeBinding = function() {
             // Retrieve save file path from settings
             console.log("Data Request Output");
@@ -94,7 +87,7 @@ $(function() {
 
             self.newFileName("text.txt");
             self.updateFileName();
-            self.fetchPorts();
+            self.fetchPorts("available");
 
             self.dataPortConnected(false);
         }
@@ -130,12 +123,18 @@ $(function() {
                     break;
 
                 case "ports_fetched":
-                    self.listOfPorts(data.ports);
+                    if(data.type == "available"){
+                        self.listOfPorts(data.ports);
+                    }
+                    else {
+                        self.connectedPorts(data.ports);
+                    }
+
                     break;
 
                 case "valid_filename":
                     notification.title =  'Filename Accepted';
-                    notification.text =  "File will be saved at " + self.settings.settings.plugins.stretchingstagecontroller.save_path() + self.saveFileName();
+                    notification.text =  "File will be saved at " + self.settings.settings.plugins.stretchingstagecontroller.save_path();
                     notification.type = "info";
                     notification.hide = true;
                     self.pathValidated(true);
@@ -180,13 +179,12 @@ $(function() {
 
         }
 
-        self.fetchPorts = function() {
-            let payload = {}
+        self.fetchPorts = function(type="") {
+            let payload = {"type":type}
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "fetchPorts", payload)
                 .done(function(response){
                 })
         }
-
 
         self.validateSettings = function() {
             self.updateFileName();
@@ -198,24 +196,15 @@ $(function() {
         }
 
         self.connectCOM = function() {
-            self.updateSelectedPorts();
             let payload = {"serial_read_port":self.selectedPorts()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "connectCOM", payload)
                 .done(function(response){
+                    self.fetchPorts("currently_connected");
                 })
         }
 
-        // self.connectCOM = function() {
-        //     self.updatePortSelection();
-        //     let payload = {"serial_read_port":self.serialReadPort()};
-        //     OctoPrint.simpleApiCommand("stretchingstagecontroller", "connectCOM", payload)
-        //         .done(function(response){
-        //         })
-        // }
-
         self.disconnectCOM = function() {
-            self.updatePortSelection();
-            let payload = {"serial_read_port":self.serialReadPort()};
+            let payload = {};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "disconnectCOM", payload)
                 .done(function(response){
                 })

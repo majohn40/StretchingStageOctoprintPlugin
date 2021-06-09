@@ -3,23 +3,22 @@
 	<h1> Stretching Stage Controller </h1>
 		<label class="control-label">{{ _('Serial Port') }}</label>
         <div class="portList">
-            <div>
-                <button class="btn btn-primary" data-bind="click:fetchPorts">Fetch Com Ports</button>
-            </div>
-
             {#data-bind="visible: portOptions.length > 0#}
             <div data-bind="foreach: listOfPorts">
-                <input type="checkbox" value="" data-bind="checked: $parent.selectedPorts, value: port">
-                <span data-bind="text: port"></span>
+                <p>
+                    <input type="checkbox" value="" data-bind="checked:$parent.selectedPorts, value:device">
+                    <span data-bind="text:device"></span>
+{#                    <span data-bind="visible:device in $parent.connectedPorts">&nbsp;[Connected]</span>#}
+                </p>
             </div>
         </div>
         <div class="input-append">
             <div class="controls">
-                <input type="text" data-bind="value: newPort">
                 <button class="btn btn-primary" data-bind="click:connectCOM, enable: dataPortConnected() == false">{{ _('Connect COM') }}</button>
-                <button class="btn btn-primary" data-bind="click:disconnectCOM, enable: dataPortConnected() == true">{{ _('Disconnect COM') }}</button>
+                <button class="btn btn-danger" data-bind="click:disconnectCOM, enable: dataPortConnected() == true">{{ _('Disconnect COM') }}</button>
             </div>
         </div>
+        <br>
 		<p>Output filename: </p>
 			<div class="input-append">
 		    	<input type="text" data-bind="value: newFileName">

@@ -5,8 +5,6 @@ import re
 
 import octoprint.plugin
 import serial.tools.list_ports
-import os
-import os.path
 from os import path
 import threading
 import serial
@@ -60,20 +58,21 @@ class CommunicationPort:
 				self.f.write(self.ser.readline().decode('utf-8'))
 
 			# If GUI is closed, stop this thread so python can exit fully
-			if self.stop:
+			if self.stop.is_set():
 				self._logger.info("The serial thread for port {} is being shut down.".format(self.port))
-				self.f.close()
+				if self.f:
+					self.f.close()
 				self.com_connected = False
 				return
 
 	def on_event(self, event, payload):
 		if event == octoprint.events.Events.PRINT_STARTED:
-			if self.save_path is not None:
-				if not self.save_path:
-					self.save_path = open(self.save_path, "x")
-				self.read_serial_data = True
-				self._logger.info("Starting read from serial port {}...".format(self.port))
-				self._plugin_manager.send_plugin_message(self._identifier, dict(message="data_collected"))
+			if self.com_connected:
+				if self.save_path is not None:
+					self.f = open(self.save_path, "x")
+					self.read_serial_data = True
+					self._logger.info("Starting read from serial port {}...".format(self.port))
+					self._plugin_manager.send_plugin_message(self._identifier, dict(message="data_collected"))
 
 		if event == octoprint.events.Events.PRINT_DONE or \
 				event == octoprint.events.Events.PRINT_FAILED or \
@@ -86,7 +85,7 @@ class CommunicationPort:
 		escaped_port = re.sub('[^A-Za-z0-9]+', '_', self.port)
 		dot_index = self.save_path.index(".")
 		self.save_path = self.save_path[:dot_index] + escaped_port + self.save_path[dot_index:]
-		self._logger.info("Save path modified for com port: {}".format(self.save_path))
+		self._logger.info("Save path for com port {} modified: {}".format(self.port, self.save_path))
 		append_num = 1
 		dot_index = self.save_path.index(".")
 		new_save_path = self.save_path
@@ -94,7 +93,7 @@ class CommunicationPort:
 			new_save_path = self.save_path[:dot_index] + "(" + str(append_num) + ")" + self.save_path[dot_index:]
 			append_num += 1
 		self.save_path = new_save_path
-		self._logger.info("Final save paths: {}".format(self.save_path))
+		self._logger.info("Final save path: {}".format(self.save_path))
 
 
 class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
@@ -149,7 +148,6 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 	def get_settings_defaults(self):
 		return dict(
 			save_path="/home/pi"
-			# port_options = [comport.device for comport in serial.tools.list_ports.comports()],
 		)
 
 	def get_api_commands(self):
@@ -157,13 +155,20 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 			fetchPorts=[],
 			validateSettings=["save_path", "file_name"],
 			connectCOM=["serial_read_port"],
-			disconnectCOM=["serial_read_port"]
+			disconnectCOM=[]
 		)
 
 	def on_api_command(self, command, data):
 		if command == "fetchPorts":
-			list_of_ports = [p.__dict__ for p in serial.tools.list_ports.comports()]
-			self._plugin_manager.send_plugin_message(self._identifier, dict(message="ports_fetched", ports=list_of_ports))
+			if data["type"] == "available":
+				list_of_ports = [p.__dict__ for p in serial.tools.list_ports.comports()]
+				self._plugin_manager.send_plugin_message(self._identifier, dict(message="ports_fetched",
+																				ports=list_of_ports,
+																				type=data["type"]))
+			elif data["type"] == "currently_connected":
+				self._plugin_manager.send_plugin_message(self._identifier, dict(message="ports_fetched",
+																				ports=self.comPorts,
+																				type=data["type"]))
 
 		if command == "validateSettings":
 			if "save_path" in data:
@@ -188,8 +193,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 		if command == "connectCOM":
 			if "serial_read_port" in data:
 				self.comPorts = []
-				port_list = data["serial_read_port"].split(',')
-				ports = [p.strip() for p in port_list]
+				ports = [p for p in data["serial_read_port"]]
 				self._logger.info("connectCOM called. Port(s) detected: {}".format(ports))
 				for p in ports:
 					new_com = CommunicationPort(p,
