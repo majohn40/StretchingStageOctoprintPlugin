@@ -165,13 +165,12 @@ $(function() {
             }
 
             new PNotify(notification);
-
         }
-
 
         self.validateSettings = function() {
             self.updateFileName();
-            let  payload = {"save_path": self.settings.settings.plugins.stretchingstagecontroller.save_path(), "file_name": self.saveFileName()};
+            let  payload = {"save_path": self.settings.settings.plugins.stretchingstagecontroller.save_path(),
+                "file_name": self.saveFileName(),"serial_read_port":self.serialReadPort()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "validateSettings", payload)
                 .done(function(response) {
                 })
