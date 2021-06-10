@@ -34,16 +34,20 @@ class CommunicationPort:
 	def serial_thread(self):
 		# When this thread is initialized, open serial port
 		try:
-			self.ser = serial.Serial(
-				port=self.port,
-				baudrate=57600,
-				parity=serial.PARITY_NONE,
-				stopbits=serial.STOPBITS_ONE,
-				bytesize=serial.EIGHTBITS,
-				timeout=0)
+			if self.ser:
+				self.ser.open()
+			else:
+				self.ser = serial.Serial(
+					port=self.port,
+					baudrate=57600,
+					parity=serial.PARITY_NONE,
+					stopbits=serial.STOPBITS_ONE,
+					bytesize=serial.EIGHTBITS,
+					timeout=0)
 			self._logger.info("Connected to COM port {} for data readout".format(self.port))
 			self._plugin_manager.send_plugin_message(self._identifier, dict(message="ComConnected", port=self.port))
 			self.com_connected = True
+			self.stop.clear()
 		except:
 			self._logger.error("COM port {} could not be opened - data cannot be collected".format(self.port))
 			self._plugin_manager.send_plugin_message(self._identifier, dict(message="ComNotConnected", port=self.port))
@@ -59,10 +63,12 @@ class CommunicationPort:
 
 			# If GUI is closed, stop this thread so python can exit fully
 			if self.stop.is_set():
-				self._logger.info("The serial thread for port {} is being shut down.".format(self.port))
+				self.com_connected = False
 				if self.f:
 					self.f.close()
-				self.com_connected = False
+				if self.ser:
+					self.ser.close()
+				self._logger.info("The serial thread for port {} is being shut down.".format(self.port))
 				return
 
 	def on_event(self, event, payload):
@@ -79,13 +85,13 @@ class CommunicationPort:
 				event == octoprint.events.Events.PRINT_CANCELLING:
 			if self.read_serial_data:
 				self.read_serial_data = False
+				self.ser.close()
 				self.f.close()
 
 	def validate_save_path(self):
 		escaped_port = re.sub('[^A-Za-z0-9]+', '_', self.port)
 		dot_index = self.save_path.index(".")
 		self.save_path = self.save_path[:dot_index] + escaped_port + self.save_path[dot_index:]
-		self._logger.info("Save path for com port {} modified: {}".format(self.port, self.save_path))
 		append_num = 1
 		dot_index = self.save_path.index(".")
 		new_save_path = self.save_path
@@ -93,7 +99,7 @@ class CommunicationPort:
 			new_save_path = self.save_path[:dot_index] + "(" + str(append_num) + ")" + self.save_path[dot_index:]
 			append_num += 1
 		self.save_path = new_save_path
-		self._logger.info("Final save path: {}".format(self.save_path))
+		self._logger.info("Save path for com port {} modified: {}".format(self.port, self.save_path))
 
 
 class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
@@ -159,16 +165,19 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 		)
 
 	def on_api_command(self, command, data):
+		import flask
 		if command == "fetchPorts":
+
 			if data["type"] == "available":
 				list_of_ports = [p.__dict__ for p in serial.tools.list_ports.comports()]
-				self._plugin_manager.send_plugin_message(self._identifier, dict(message="ports_fetched",
-																				ports=list_of_ports,
-																				type=data["type"]))
+
 			elif data["type"] == "currently_connected":
-				self._plugin_manager.send_plugin_message(self._identifier, dict(message="ports_fetched",
-																				ports=self.comPorts,
-																				type=data["type"]))
+				list_of_ports = [p.port for p in self.comPorts if p.com_connected]
+
+			self._plugin_manager.send_plugin_message(self._identifier, dict(
+				message="ports_fetched",
+				ports=list_of_ports,
+				type=data["type"]))
 
 		if command == "validateSettings":
 			if "save_path" in data:
@@ -192,21 +201,21 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 		if command == "connectCOM":
 			if "serial_read_port" in data:
-				self.comPorts = []
 				ports = [p for p in data["serial_read_port"]]
+				existing = [existing_com.port for existing_com in self.comPorts]
+				new = [p for p in ports if p not in existing]
 				self._logger.info("connectCOM called. Port(s) detected: {}".format(ports))
-				for p in ports:
-					new_com = CommunicationPort(p,
-												self._logger,
-												self._plugin_manager,
-												self._identifier)
+				for p in new:
+					new_com = CommunicationPort(p, self._logger, self._plugin_manager, self._identifier)
 					self.comPorts.append(new_com)
-					self.start_serial_thread(new_com)
+
+				for p in self.comPorts:
+					self.start_serial_thread(p)
 
 		if command == "disconnectCOM":
 			for p in self.comPorts:
 				p.stop.set()
-			self.stop.set()
+				self.comPorts.remove(p)
 			self._plugin_manager.send_plugin_message(self._identifier, dict(message="com_disconnected"))
 
 

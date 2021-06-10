@@ -112,14 +112,16 @@ $(function() {
                     notification.type = "error";
                     notification.hide = true;
                     self.dataPortConnected(false);
+                    self.fetchPorts("currently_connected");
                     break;
 
                 case "ComConnected":
-                    notification.title =  'COM Connected';
+                    notification.title =  'COM ' + data.port + ' Connected';
                     notification.text =  "Ready for Serial Data Readout";
                     notification.type = "info";
                     notification.hide = true;
                     self.dataPortConnected(true);
+                    self.fetchPorts("currently_connected");
                     break;
 
                 case "ports_fetched":
@@ -155,18 +157,19 @@ $(function() {
                     break;
 
                 case "path_missing_slash":
-                    notification.title =  'Path must end in /';
-                    notification.text =  "You are trying to save files to an invalid path. Path must end in /. Please edit the save path in Octoprint settings to a valid path";
+                    notification.title =  'Save Path must end in /';
+                    notification.text =  "You are trying to save files to an invalid path. Path must end in /. Please edit the save path in Octoprint settings";
                     notification.type = "error";
                     notification.hide = true
                     break;
 
                 case "com_disconnected":
-                    notification.title =  'COM Port Disconnected';
+                    notification.title =  'COM Port ' + data.port + ' Disconnected';
                     notification.text =  "COM port has been successfully disconnected";
                     notification.type = "info";
                     notification.hide = true
                     self.dataPortConnected(false)
+                    self.fetchPorts("currently_connected");
                     break;
 
                 case "data_collected":
@@ -199,7 +202,6 @@ $(function() {
             let payload = {"serial_read_port":self.selectedPorts()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "connectCOM", payload)
                 .done(function(response){
-                    self.fetchPorts("currently_connected");
                 })
         }
 

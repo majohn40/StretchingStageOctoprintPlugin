@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <body>
 	<h1> Stretching Stage Controller </h1>
-		<label class="control-label">{{ _('Serial Port') }}</label>
+{#		<label class="control-label">{{ _('Serial Port') }}</label>#}
         <div class="portList">
-            {#data-bind="visible: portOptions.length > 0#}
+            <p>
+                <span data-bind="visible: listOfPorts().length == 0">
+                    Please wait for port fetching to complete or check your connections and refresh the page.
+                </span>
+            </p>
             <div data-bind="foreach: listOfPorts">
                 <p>
-                    <input type="checkbox" value="" data-bind="checked:$parent.selectedPorts, value:device">
+                    <input type="checkbox" value="" data-bind="checked:$parent.selectedPorts, value:device, enable: $parent.dataPortConnected() == false">&nbsp;
                     <span data-bind="text:device"></span>
-{#                    <span data-bind="visible:device in $parent.connectedPorts">&nbsp;[Connected]</span>#}
+                    <span data-bind="visible:$parent.connectedPorts().indexOf(device) != -1">&nbsp;[Connected]</span>
                 </p>
             </div>
-        </div>
-        <div class="input-append">
-            <div class="controls">
-                <button class="btn btn-primary" data-bind="click:connectCOM, enable: dataPortConnected() == false">{{ _('Connect COM') }}</button>
-                <button class="btn btn-danger" data-bind="click:disconnectCOM, enable: dataPortConnected() == true">{{ _('Disconnect COM') }}</button>
+            <div class="input-append" data-bind="visible: listOfPorts().length != 0">
+                <div class="controls">
+                    <button class="btn btn-primary" data-bind="click:connectCOM, enable: dataPortConnected() == false">{{ _('Connect COM') }}</button>
+                    <button class="btn btn-danger" data-bind="click:disconnectCOM, enable: dataPortConnected() == true">{{ _('Disconnect COM') }}</button>
+                </div>
             </div>
         </div>
+
         <br>
 		<p>Output filename: </p>
 			<div class="input-append">
