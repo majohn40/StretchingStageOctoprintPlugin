@@ -34,16 +34,13 @@ class CommunicationPort:
 	def serial_thread(self):
 		# When this thread is initialized, open serial port
 		try:
-			if self.ser:
-				self.ser.open()
-			else:
-				self.ser = serial.Serial(
-					port=self.port,
-					baudrate=57600,
-					parity=serial.PARITY_NONE,
-					stopbits=serial.STOPBITS_ONE,
-					bytesize=serial.EIGHTBITS,
-					timeout=0)
+			self.ser = serial.Serial(
+				port=self.port,
+				baudrate=57600,
+				parity=serial.PARITY_NONE,
+				stopbits=serial.STOPBITS_ONE,
+				bytesize=serial.EIGHTBITS,
+				timeout=0)
 			self._logger.info("Connected to COM port {} for data readout".format(self.port))
 			self._plugin_manager.send_plugin_message(self._identifier, dict(message="ComConnected", port=self.port))
 			self.com_connected = True
@@ -66,8 +63,7 @@ class CommunicationPort:
 				self.com_connected = False
 				if self.f:
 					self.f.close()
-				if self.ser:
-					self.ser.close()
+				self.ser.close()
 				self._logger.info("The serial thread for port {} is being shut down.".format(self.port))
 				return
 
@@ -80,9 +76,9 @@ class CommunicationPort:
 					self._logger.info("Starting read from serial port {}...".format(self.port))
 					self._plugin_manager.send_plugin_message(self._identifier, dict(message="data_collected"))
 
-		if event == octoprint.events.Events.PRINT_DONE or \
-				event == octoprint.events.Events.PRINT_FAILED or \
-				event == octoprint.events.Events.PRINT_CANCELLING:
+		if event in [octoprint.events.Events.PRINT_DONE,
+						 octoprint.events.Events.PRINT_FAILED,
+						 octoprint.events.Events.PRINT_CANCELLING]:
 			if self.read_serial_data:
 				self.read_serial_data = False
 				self.ser.close()
@@ -92,14 +88,16 @@ class CommunicationPort:
 		escaped_port = re.sub('[^A-Za-z0-9]+', '_', self.port)
 		dot_index = self.save_path.index(".")
 		self.save_path = self.save_path[:dot_index] + escaped_port + self.save_path[dot_index:]
+
 		append_num = 1
 		dot_index = self.save_path.index(".")
 		new_save_path = self.save_path
+
 		while path.exists(new_save_path):
-			new_save_path = self.save_path[:dot_index] + "(" + str(append_num) + ")" + self.save_path[dot_index:]
+			new_save_path = self.save_path[:dot_index] + "__" + str(append_num) + self.save_path[dot_index:]
 			append_num += 1
 		self.save_path = new_save_path
-		self._logger.info("Save path for com port {} modified: {}".format(self.port, self.save_path))
+		self._logger.info("New save path for com port {}: {}".format(self.port, self.save_path))
 
 
 class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
@@ -122,28 +120,38 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 	def get_assets(self):
 		return dict(
-			js=["js/stretchingstagecontroller.js"]
+			js=["js/stretchingstagecontroller.js"],
+			css=["css/stretchingstagecontroller.css"]
 		)
 
 	def start_serial_thread(self, port):
 		threading.Thread(target=port.serial_thread).start()
 
-	def on_event(self, event, payload):
+	def stop_all_coms(self):
+		for p in self.comPorts[:]:
+			self._plugin_manager.send_plugin_message(self._identifier, dict(message="com_disconnected", port=p.port))
+			p.stop.set()
+			self.comPorts.remove(p)
 
+	def on_event(self, event, payload):
 		for p in self.comPorts:
 			p.on_event(event, payload)
 
+		print_done = False
 		if event == octoprint.events.Events.PRINT_STARTED:
 			self._logger.info("Print started.")
-
 		if event == octoprint.events.Events.PRINT_DONE:
 			self._logger.info("Print completed successfully.")
-
+			print_done = True
 		if event == octoprint.events.Events.PRINT_FAILED:
 			self._logger.info("Print failed.")
-
+			print_done = True
 		if event == octoprint.events.Events.PRINT_CANCELLING:
 			self._logger.info("Print cancelled.")
+			print_done = True
+
+		if print_done:
+			self.stop_all_coms()
 
 	def get_template_configs(self):
 		return [
@@ -153,24 +161,23 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 	def get_settings_defaults(self):
 		return dict(
-			save_path="/home/pi"
+			save_path="/home/pi/",
+			baud_rate="57600"
 		)
 
 	def get_api_commands(self):
 		return dict(
-			fetchPorts=[],
+			fetchPorts=["type"],
 			validateSettings=["save_path", "file_name"],
-			connectCOM=["serial_read_port"],
+			connectCOM=["serial_read_ports"],
 			disconnectCOM=[]
 		)
 
 	def on_api_command(self, command, data):
-		import flask
 		if command == "fetchPorts":
-
+			list_of_ports = []
 			if data["type"] == "available":
 				list_of_ports = [p.__dict__ for p in serial.tools.list_ports.comports()]
-
 			elif data["type"] == "currently_connected":
 				list_of_ports = [p.port for p in self.comPorts if p.com_connected]
 
@@ -187,25 +194,22 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 					self._plugin_manager.send_plugin_message(self._identifier, dict(message="path_missing_slash"))
 				else:
 					if dir_exists:
-						self._logger.info("Settings directory exists and is ready for readout.")
-						self._logger.info("New file(s) being created.")
+						self._logger.info("Settings directory exists and is ready for readout. New file(s) being created.")
 						self._plugin_manager.send_plugin_message(self._identifier, dict(message="valid_filename"))
 						for p in self.comPorts:
 							p.save_path = "{save_path}{file_name}".format(**data)
 							p.validate_save_path()
 					else:
 						self._logger.warning(
-							"*******WARNING******** Save directory for Stretching Stage Controller does not exist!"
-							" Please pick a valid save directory")
+							"*******WARNING******** Save directory for Stretching Stage Controller does not exist!")
 						self._plugin_manager.send_plugin_message(self._identifier, dict(message="path_does_not_exist"))
 
 		if command == "connectCOM":
-			if "serial_read_port" in data:
-				ports = [p for p in data["serial_read_port"]]
-				existing = [existing_com.port for existing_com in self.comPorts]
-				new = [p for p in ports if p not in existing]
+			if "serial_read_ports" in data:
+				ports = [p for p in data["serial_read_ports"]]
 				self._logger.info("connectCOM called. Port(s) detected: {}".format(ports))
-				for p in new:
+
+				for p in ports:
 					new_com = CommunicationPort(p, self._logger, self._plugin_manager, self._identifier)
 					self.comPorts.append(new_com)
 
@@ -213,10 +217,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 					self.start_serial_thread(p)
 
 		if command == "disconnectCOM":
-			for p in self.comPorts:
-				p.stop.set()
-				self.comPorts.remove(p)
-			self._plugin_manager.send_plugin_message(self._identifier, dict(message="com_disconnected"))
+			self.stop_all_coms()
 
 
 __plugin_name__ = "Stretching Stage Controller"

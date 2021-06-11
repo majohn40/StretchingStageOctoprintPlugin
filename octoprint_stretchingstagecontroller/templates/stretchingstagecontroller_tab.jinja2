@@ -2,17 +2,18 @@
 <body>
 	<h1> Stretching Stage Controller </h1>
 {#		<label class="control-label">{{ _('Serial Port') }}</label>#}
+    <div class="pluginControls" data-bind="class: disabledControls">
         <div class="portList">
             <p>
                 <span data-bind="visible: listOfPorts().length == 0">
-                    Please wait for port fetching to complete or check your connections and refresh the page.
+                    Please wait for port fetching to complete, or check your connections and refresh the page.
                 </span>
             </p>
             <div data-bind="foreach: listOfPorts">
                 <p>
                     <input type="checkbox" value="" data-bind="checked:$parent.selectedPorts, value:device, enable: $parent.dataPortConnected() == false">&nbsp;
                     <span data-bind="text:device"></span>
-                    <span data-bind="visible:$parent.connectedPorts().indexOf(device) != -1">&nbsp;[Connected]</span>
+                    <span data-bind="visible:$parent.connectedPorts().indexOf(device) != -1">&nbsp;<b>[Connected]</b></span>
                 </p>
             </div>
             <div class="input-append" data-bind="visible: listOfPorts().length != 0">
@@ -25,10 +26,17 @@
 
         <br>
 		<p>Output filename: </p>
-			<div class="input-append">
+			<span class="input-append">
 		    	<input type="text" data-bind="value: newFileName">
 		    	<button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Validate Filename') }}</button>
-			</div>
+			</span>
+            <span style="color:green;margin-left:2em;" data-bind="visible: pathValidated() == true"><b>Validated!</b></span>
+    </div>
+        <p class="text-center">
+            <span data-bind="visible: disabledControls">
+                <b>Printer is busy...</b>
+            </span>
+        </p>
 </body>
 
 <!-- Modal-Dialog -->
@@ -68,9 +76,9 @@
         <h3 class="modal-title">Ready to Print?</h3>
     </div>
     <div class="modal-body">
-        <p>Data will be saved to </p>
-        <span data-bind="text: settings.settings.plugins.stretchingstagecontroller.save_path()"></span>
-        <span data-bind="text: saveFileName"></span>
+        <p>Data will be saved to
+        <span data-bind="text: settings.settings.plugins.stretchingstagecontroller.save_path() + saveFileName()"></span>
+        and filenames will be appended with their port names.</p>
     </div>
     <div class="modal-footer">
         <button class="btn btn-cancel" data-dismiss="modal" aria-hidden="true">Cancel</button>

@@ -8,15 +8,18 @@ $(function() {
         self.connectionViewModel = parameters[1];
         self.printerStateViewModel = parameters[2];
 
-        self.serialReadPort = ko.observable();
-        self.newPort = ko.observable();
-
         self.saveFileName = ko.observable();
         self.newFileName = ko.observable();
 
         self.selectedPorts = ko.observableArray([]);
         self.listOfPorts = ko.observableArray([]);
         self.connectedPorts = ko.observableArray([]);
+
+        self.disabledControls = ko.pureComputed(function() {
+                    return (self.printerStateViewModel.isPrinting()
+                        || self.printerStateViewModel.isPaused()
+                        || self.printerStateViewModel.isBusy()) ? "disabledControls" : undefined;
+                }, this);
 
         self.dataPortConnected = ko.observable();
         self.dataPortConnected(false);
@@ -93,7 +96,7 @@ $(function() {
         }
 
         self.onDataUpdaterPluginMessage = function(plugin, data){
-            if (plugin != "stretchingstagecontroller") {
+            if (plugin !== "stretchingstagecontroller") {
                 return;
             }
             let notification = {};
@@ -116,9 +119,9 @@ $(function() {
                     break;
 
                 case "ComConnected":
-                    notification.title =  'COM ' + data.port + ' Connected';
-                    notification.text =  "Ready for Serial Data Readout";
-                    notification.type = "info";
+                    notification.title =  'COM Port Connected';
+                    notification.text =  "Ready for Serial Data Readout on Port " + data.port;
+                    notification.type = "success";
                     notification.hide = true;
                     self.dataPortConnected(true);
                     self.fetchPorts("currently_connected");
@@ -158,17 +161,17 @@ $(function() {
 
                 case "path_missing_slash":
                     notification.title =  'Save Path must end in /';
-                    notification.text =  "You are trying to save files to an invalid path. Path must end in /. Please edit the save path in Octoprint settings";
+                    notification.text =  "You are trying to save files to an invalid filepath. Path must end in /. Please edit the save path in Octoprint settings";
                     notification.type = "error";
-                    notification.hide = true
+                    notification.hide = true;
                     break;
 
                 case "com_disconnected":
-                    notification.title =  'COM Port ' + data.port + ' Disconnected';
-                    notification.text =  "COM port has been successfully disconnected";
-                    notification.type = "info";
-                    notification.hide = true
-                    self.dataPortConnected(false)
+                    notification.title =  'COM Port Disconnected';
+                    notification.text =  "COM port " + data.port + " has been disconnected.";
+                    notification.type = "error";
+                    notification.hide = true;
+                    self.dataPortConnected(false);
                     self.fetchPorts("currently_connected");
                     break;
 
@@ -192,14 +195,14 @@ $(function() {
         self.validateSettings = function() {
             self.updateFileName();
             let  payload = {"save_path": self.settings.settings.plugins.stretchingstagecontroller.save_path(),
-                "file_name": self.saveFileName(),"serial_read_port":self.serialReadPort()};
+                "file_name": self.saveFileName()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "validateSettings", payload)
                 .done(function(response) {
                 })
         }
 
         self.connectCOM = function() {
-            let payload = {"serial_read_port":self.selectedPorts()};
+            let payload = {"serial_read_ports":self.selectedPorts()};
             OctoPrint.simpleApiCommand("stretchingstagecontroller", "connectCOM", payload)
                 .done(function(response){
                 })
