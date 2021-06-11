@@ -11,10 +11,9 @@ import serial
 
 
 class CommunicationPort:
-
 	stop = threading.Event()
 
-	def __init__(self, port=None, logger=None, plugin_manager=None, identifier=None):
+	def __init__(self, port=None, logger=None, plugin_manager=None, identifier=None, baud_rate=57600):
 		self.port = port
 		self._logger = logger
 		self._plugin_manager = plugin_manager
@@ -24,6 +23,7 @@ class CommunicationPort:
 		self.save_path = None
 		self.com_connected = False
 		self.ser = None
+		self.baud_rate = baud_rate
 
 	def __str__(self):
 		return self.port
@@ -36,7 +36,7 @@ class CommunicationPort:
 		try:
 			self.ser = serial.Serial(
 				port=self.port,
-				baudrate=57600,
+				baudrate=self.baud_rate,
 				parity=serial.PARITY_NONE,
 				stopbits=serial.STOPBITS_ONE,
 				bytesize=serial.EIGHTBITS,
@@ -75,10 +75,9 @@ class CommunicationPort:
 					self.read_serial_data = True
 					self._logger.info("Starting read from serial port {}...".format(self.port))
 					self._plugin_manager.send_plugin_message(self._identifier, dict(message="data_collected"))
-
 		if event in [octoprint.events.Events.PRINT_DONE,
-						 octoprint.events.Events.PRINT_FAILED,
-						 octoprint.events.Events.PRINT_CANCELLING]:
+					octoprint.events.Events.PRINT_FAILED,
+					octoprint.events.Events.PRINT_CANCELLING]:
 			if self.read_serial_data:
 				self.read_serial_data = False
 				self.ser.close()
@@ -162,7 +161,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 	def get_settings_defaults(self):
 		return dict(
 			save_path="/home/pi/",
-			baud_rate="57600"
+			baud_rate=57600
 		)
 
 	def get_api_commands(self):
@@ -181,10 +180,12 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 			elif data["type"] == "currently_connected":
 				list_of_ports = [p.port for p in self.comPorts if p.com_connected]
 
-			self._plugin_manager.send_plugin_message(self._identifier, dict(
-				message="ports_fetched",
-				ports=list_of_ports,
-				type=data["type"]))
+			self._plugin_manager.send_plugin_message(
+													self._identifier,
+													dict(
+														message="ports_fetched",
+														ports=list_of_ports,
+														type=data["type"]))
 
 		if command == "validateSettings":
 			if "save_path" in data:
@@ -194,7 +195,8 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 					self._plugin_manager.send_plugin_message(self._identifier, dict(message="path_missing_slash"))
 				else:
 					if dir_exists:
-						self._logger.info("Settings directory exists and is ready for readout. New file(s) being created.")
+						self._logger.info(
+							"Settings directory exists and is ready for readout. New file(s) being created.")
 						self._plugin_manager.send_plugin_message(self._identifier, dict(message="valid_filename"))
 						for p in self.comPorts:
 							p.save_path = "{save_path}{file_name}".format(**data)
@@ -210,7 +212,12 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 				self._logger.info("connectCOM called. Port(s) detected: {}".format(ports))
 
 				for p in ports:
-					new_com = CommunicationPort(p, self._logger, self._plugin_manager, self._identifier)
+					new_com = CommunicationPort(
+						p,
+						self._logger,
+						self._plugin_manager,
+						self._identifier,
+						self._settings.get(["baud_rate"]))
 					self.comPorts.append(new_com)
 
 				for p in self.comPorts:

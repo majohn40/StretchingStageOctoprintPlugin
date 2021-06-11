@@ -18,3 +18,14 @@
     pointer-events: none;
     opacity: 0.4;
 }
+
+.positiveText {
+    color:green;
+    display:inline-block;
+    margin: 4px 0 0 2em;
+    font-weight: bold;
+}
+
+input[type='checkbox'] {
+    margin-top: 0px;
+}

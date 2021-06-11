@@ -16,9 +16,7 @@ $(function() {
         self.connectedPorts = ko.observableArray([]);
 
         self.disabledControls = ko.pureComputed(function() {
-                    return (self.printerStateViewModel.isPrinting()
-                        || self.printerStateViewModel.isPaused()
-                        || self.printerStateViewModel.isBusy()) ? "disabledControls" : undefined;
+                    return self.printerStateViewModel.isBusy() ? "disabledControls" : undefined;
                 }, this);
 
         self.dataPortConnected = ko.observable();
@@ -34,7 +32,7 @@ $(function() {
                 if(self.pathValidated() == true){
                     showDialog("#sidebar_startPrintDialog", function(dialog){
                         startPrint();
-                        dialog.modal('hide');
+                        dialog .modal('hide');
                         new PNotify({
                             title: 'Serial Data Collection Started',
                             text: "Reading Serial Data...",
@@ -58,6 +56,7 @@ $(function() {
 
         };
         self.printerStateViewModel.print = newStartPrint;
+
 
         //Dialog modal code
         function showDialog(dialogId, confirmFunction){
@@ -228,3 +227,4 @@ $(function() {
         elements: ["#tab_plugin_stretchingstagecontroller"]
     });
 });
+

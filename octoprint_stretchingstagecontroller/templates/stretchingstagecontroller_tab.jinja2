@@ -1,19 +1,16 @@
 <!DOCTYPE html>
 <body>
 	<h1> Stretching Stage Controller </h1>
-{#		<label class="control-label">{{ _('Serial Port') }}</label>#}
-    <div class="pluginControls" data-bind="class: disabledControls">
+    <p class="text-center" data-bind="visible: listOfPorts().length == 0">
+            <b>Please wait for printer to become ready and port fetching to complete.</b>
+    </p>
+    <div class="pluginControls" data-bind="class: disabledControls, visible: listOfPorts().length > 0">
         <div class="portList">
-            <p>
-                <span data-bind="visible: listOfPorts().length == 0">
-                    Please wait for port fetching to complete, or check your connections and refresh the page.
-                </span>
-            </p>
             <div data-bind="foreach: listOfPorts">
                 <p>
                     <input type="checkbox" value="" data-bind="checked:$parent.selectedPorts, value:device, enable: $parent.dataPortConnected() == false">&nbsp;
-                    <span data-bind="text:device"></span>
-                    <span data-bind="visible:$parent.connectedPorts().indexOf(device) != -1">&nbsp;<b>[Connected]</b></span>
+                    <span style="margin: 4px 0 0 0;display:inline-block;" data-bind="text:device"></span>
+                    <span class="positiveText" data-bind="visible:$parent.connectedPorts().indexOf(device) != -1">[Connected]</span>
                 </p>
             </div>
             <div class="input-append" data-bind="visible: listOfPorts().length != 0">
@@ -28,15 +25,13 @@
 		<p>Output filename: </p>
 			<span class="input-append">
 		    	<input type="text" data-bind="value: newFileName">
-		    	<button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Validate Filename') }}</button>
+		    	<button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Confirm Filename') }}</button>
 			</span>
-            <span style="color:green;margin-left:2em;" data-bind="visible: pathValidated() == true"><b>Validated!</b></span>
+            <p class="positiveText" data-bind="visible: pathValidated() == true">Validated!</p>
     </div>
-        <p class="text-center">
-            <span data-bind="visible: disabledControls">
-                <b>Printer is busy...</b>
-            </span>
-        </p>
+    <p class="text-center" style="margin-top:2em;" data-bind="visible: disabledControls">
+            <b>Printer is busy...</b>
+    </p>
 </body>
 
 <!-- Modal-Dialog -->
@@ -87,3 +82,11 @@
 </div>
 
 
+{#<div className="btn btn-mini" data-bind="click:#}
+{#    function() {#}
+{#        if ($root.enableSelectAndPrint($data))#}
+{#            { $root.loadFile($data, true); }#}
+{#        else { return; }#}
+{#    }">#}
+{#        <i className="fas fa-print"></i>#}
+{#    </div>#}
