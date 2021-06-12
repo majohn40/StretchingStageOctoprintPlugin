@@ -7,6 +7,7 @@ $(function() {
         self.settings = parameters[0];
         self.connectionViewModel = parameters[1];
         self.printerStateViewModel = parameters[2];
+        self.filesViewModel = parameters[3];
 
         self.saveFileName = ko.observable();
         self.newFileName = ko.observable();
@@ -16,8 +17,8 @@ $(function() {
         self.connectedPorts = ko.observableArray([]);
 
         self.disabledControls = ko.pureComputed(function() {
-                    return self.printerStateViewModel.isBusy() ? "disabledControls" : undefined;
-                }, this);
+            return self.printerStateViewModel.isBusy() ? "disabledControls" : undefined;
+        }, this);
 
         self.dataPortConnected = ko.observable();
         self.dataPortConnected(false);
@@ -56,6 +57,41 @@ $(function() {
 
         };
         self.printerStateViewModel.print = newStartPrint;
+
+        const oldLoad = self.filesViewModel.loadFile;
+        const newLoad = function (data, printAfterLoad) {
+            if (printAfterLoad) {
+                if (self.dataPortConnected() == true) {
+                    if (self.pathValidated() == true) {
+                        showDialog("#sidebar_startPrintDialog", function (dialog) {
+                            oldLoad(data, printAfterLoad);
+                            dialog.modal('hide');
+                            new PNotify({
+                                title: 'Serial Data Collection Started',
+                                text: "Reading Serial Data...",
+                                type: "info",
+                                hide: true
+                            });
+                        });
+                    } else {
+                        showDialog("#sidebar_filePathNotValidated", function (dialog) {
+                            oldLoad(data, printAfterLoad);
+                            dialog.modal('hide');
+                        });
+                    }
+
+                } else {
+                    showDialog("#sidebar_noComWarningDialog", function (dialog) {
+                        oldLoad(data, printAfterLoad);
+                        dialog.modal('hide');
+                    });
+                }
+            }
+            else{
+                oldLoad(data, printAfterLoad);
+            }
+        };
+        self.filesViewModel.loadFile = newLoad;
 
 
         //Dialog modal code
@@ -221,7 +257,7 @@ $(function() {
         construct: stretchingstagecontrollerViewModel,
 
         // e.g. loginStateViewModel, settingsViewModel, ...
-        dependencies: ["settingsViewModel", "connectionViewModel", "printerStateViewModel" ],
+        dependencies: ["settingsViewModel", "connectionViewModel", "printerStateViewModel", "filesViewModel" ],
 
         // e.g. #settings_plugin_DetailedProgress, #tab_plugin_DetailedProgress, ...
         elements: ["#tab_plugin_stretchingstagecontroller"]

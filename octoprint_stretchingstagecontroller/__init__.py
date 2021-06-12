@@ -23,7 +23,7 @@ class CommunicationPort:
 		self.save_path = None
 		self.com_connected = False
 		self.ser = None
-		self.baud_rate = baud_rate
+		self.baud_rate = int(baud_rate)
 
 	def __str__(self):
 		return self.port
@@ -36,7 +36,7 @@ class CommunicationPort:
 		try:
 			self.ser = serial.Serial(
 				port=self.port,
-				baudrate=self.baud_rate,
+				baudrate=57600,
 				parity=serial.PARITY_NONE,
 				stopbits=serial.STOPBITS_ONE,
 				bytesize=serial.EIGHTBITS,
@@ -116,6 +116,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 	def on_after_startup(self):
 		self._logger.info("Stretching Stage controller starting up...")
+		print(self._settings.get_all_data(asdict=True))
 
 	def get_assets(self):
 		return dict(
@@ -161,7 +162,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 	def get_settings_defaults(self):
 		return dict(
 			save_path="/home/pi/",
-			baud_rate=57600
+			stretchingstagecontroller_baud_rate=57600
 		)
 
 	def get_api_commands(self):
@@ -210,14 +211,15 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 			if "serial_read_ports" in data:
 				ports = [p for p in data["serial_read_ports"]]
 				self._logger.info("connectCOM called. Port(s) detected: {}".format(ports))
-
+				print(self._settings.get(["stretchingstagecontroller_baud_rate"]))
 				for p in ports:
 					new_com = CommunicationPort(
 						p,
 						self._logger,
 						self._plugin_manager,
 						self._identifier,
-						self._settings.get(["baud_rate"]))
+						self._settings.get_int(["stretchingstagecontroller_baud_rate"]))
+
 					self.comPorts.append(new_com)
 
 				for p in self.comPorts:
