@@ -2,7 +2,6 @@
 from __future__ import absolute_import, unicode_literals
 
 import re
-
 import octoprint.plugin
 import serial.tools.list_ports
 from os import path
@@ -13,7 +12,7 @@ import serial
 class CommunicationPort:
 	stop = threading.Event()
 
-	def __init__(self, port=None, logger=None, plugin_manager=None, identifier=None, baud_rate=57600):
+	def __init__(self, port=None, logger=None, plugin_manager=None, identifier=None, baud=57600):
 		self.port = port
 		self._logger = logger
 		self._plugin_manager = plugin_manager
@@ -23,7 +22,7 @@ class CommunicationPort:
 		self.save_path = None
 		self.com_connected = False
 		self.ser = None
-		self.baud_rate = int(baud_rate)
+		self.baud = baud
 
 	def __str__(self):
 		return self.port
@@ -36,7 +35,7 @@ class CommunicationPort:
 		try:
 			self.ser = serial.Serial(
 				port=self.port,
-				baudrate=57600,
+				baudrate=self.baud,
 				parity=serial.PARITY_NONE,
 				stopbits=serial.STOPBITS_ONE,
 				bytesize=serial.EIGHTBITS,
@@ -57,7 +56,6 @@ class CommunicationPort:
 		while True:
 			if self.read_serial_data:
 				self.f.write(self.ser.readline().decode('utf-8'))
-
 			# If GUI is closed, stop this thread so python can exit fully
 			if self.stop.is_set():
 				self.com_connected = False
@@ -83,7 +81,14 @@ class CommunicationPort:
 				self.ser.close()
 				self.f.close()
 
-	def validate_save_path(self):
+	"""
+		Takes the name of the com port we're using, such as '/dev/ttyUSB0' and uses a regex to escape all the characters
+		which are not letters nor numbers. They are replaced with underscores. E.g. '/dev/ttyUSB0' -> '_dev_ttyUSB0'
+		Then takes the existing save path, such as '/home/pi/example.txt' and inserts the escaped com port name
+		before the extension '.txt'. E.g. '/home/pi/example.txt' -> '/home/pi/example_dev_ttyUSB0.txt'
+		Finally, if that file name already exists, it creates an incremented version '/home/pi/example_dev_ttyUSB0__2.txt'
+	"""
+	def handle_save_path(self):
 		escaped_port = re.sub('[^A-Za-z0-9]+', '_', self.port)
 		dot_index = self.save_path.index(".")
 		self.save_path = self.save_path[:dot_index] + escaped_port + self.save_path[dot_index:]
@@ -116,7 +121,6 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 
 	def on_after_startup(self):
 		self._logger.info("Stretching Stage controller starting up...")
-		print(self._settings.get_all_data(asdict=True))
 
 	def get_assets(self):
 		return dict(
@@ -128,6 +132,7 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 		threading.Thread(target=port.serial_thread).start()
 
 	def stop_all_coms(self):
+		# We iterate over a copy of the list. Deleting while iterating across a list leads to some funky behavior.
 		for p in self.comPorts[:]:
 			self._plugin_manager.send_plugin_message(self._identifier, dict(message="com_disconnected", port=p.port))
 			p.stop.set()
@@ -137,20 +142,16 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 		for p in self.comPorts:
 			p.on_event(event, payload)
 
-		print_done = False
 		if event == octoprint.events.Events.PRINT_STARTED:
 			self._logger.info("Print started.")
 		if event == octoprint.events.Events.PRINT_DONE:
 			self._logger.info("Print completed successfully.")
-			print_done = True
+			self.stop_all_coms()
 		if event == octoprint.events.Events.PRINT_FAILED:
 			self._logger.info("Print failed.")
-			print_done = True
+			self.stop_all_coms()
 		if event == octoprint.events.Events.PRINT_CANCELLING:
 			self._logger.info("Print cancelled.")
-			print_done = True
-
-		if print_done:
 			self.stop_all_coms()
 
 	def get_template_configs(self):
@@ -174,6 +175,9 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 		)
 
 	def on_api_command(self, command, data):
+		# Two different types of fetching ports:
+		# 1. List all com ports that we are able to establish a connection with
+		# 2. List all ports that we have already established a connection with
 		if command == "fetchPorts":
 			list_of_ports = []
 			if data["type"] == "available":
@@ -188,6 +192,8 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 														ports=list_of_ports,
 														type=data["type"]))
 
+		# Mostly retaining Megan's code. We run validate_save_path() to handle existing files, duplicates, and to
+		# create a distinct logfile for each com port that we're connected to.
 		if command == "validateSettings":
 			if "save_path" in data:
 				self._logger.info("Parameters Received. Save path is {save_path}".format(**data))
@@ -201,17 +207,17 @@ class StretchingStagePlugin(octoprint.plugin.StartupPlugin,
 						self._plugin_manager.send_plugin_message(self._identifier, dict(message="valid_filename"))
 						for p in self.comPorts:
 							p.save_path = "{save_path}{file_name}".format(**data)
-							p.validate_save_path()
+							p.handle_save_path()
 					else:
 						self._logger.warning(
 							"*******WARNING******** Save directory for Stretching Stage Controller does not exist!")
 						self._plugin_manager.send_plugin_message(self._identifier, dict(message="path_does_not_exist"))
 
+		# The data from the plugin controls is sent across as a list. We separate and create new objs for each.
 		if command == "connectCOM":
 			if "serial_read_ports" in data:
 				ports = [p for p in data["serial_read_ports"]]
 				self._logger.info("connectCOM called. Port(s) detected: {}".format(ports))
-				print(self._settings.get(["stretchingstagecontroller_baud_rate"]))
 				for p in ports:
 					new_com = CommunicationPort(
 						p,

@@ -58,6 +58,9 @@ $(function() {
         };
         self.printerStateViewModel.print = newStartPrint;
 
+        // Wrap the "Load & Print" button into the same data check popup
+        // We only intercept functionality if the user intends to print immediately after loading file.
+        // i.e. printAfterLoad == true
         const oldLoad = self.filesViewModel.loadFile;
         const newLoad = function (data, printAfterLoad) {
             if (printAfterLoad) {
@@ -79,22 +82,22 @@ $(function() {
                             dialog.modal('hide');
                         });
                     }
-
-                } else {
+                }
+                else {
                     showDialog("#sidebar_noComWarningDialog", function (dialog) {
                         oldLoad(data, printAfterLoad);
                         dialog.modal('hide');
                     });
                 }
             }
-            else{
+            else {
                 oldLoad(data, printAfterLoad);
             }
         };
         self.filesViewModel.loadFile = newLoad;
 
 
-        //Dialog modal code
+        // Dialog modal code
         function showDialog(dialogId, confirmFunction){
             // show dialog
             // sidebar_deleteFilesDialog
@@ -134,6 +137,8 @@ $(function() {
             if (plugin !== "stretchingstagecontroller") {
                 return;
             }
+            // Create an object that will be passed to instantiate a notification popup
+            // See PNotify documentation for more information about notification parameters
             let notification = {};
 
             notification.buttons =
@@ -169,7 +174,6 @@ $(function() {
                     else {
                         self.connectedPorts(data.ports);
                     }
-
                     break;
 
                 case "valid_filename":
@@ -249,7 +253,6 @@ $(function() {
                 .done(function(response){
                 })
         }
-
     }
 
 

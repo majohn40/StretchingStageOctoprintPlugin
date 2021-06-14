@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <body>
-	<h1> Stretching Stage Controller </h1>
-    <p class="text-center" data-bind="visible: listOfPorts().length == 0">
-            <b>Please wait for printer to become ready and port fetching to complete.</b>
-    </p>
+    <h1> Stretching Stage Controller </h1>
+
+    <p class="text-center" data-bind="visible: listOfPorts().length == 0"><b>
+        Please wait for printer to become ready and port fetching to complete.
+    </b></p>
+
     <div class="pluginControls" data-bind="class: disabledControls, visible: listOfPorts().length > 0">
         <div class="portList">
             <div data-bind="foreach: listOfPorts">
@@ -21,16 +23,19 @@
             </div>
         </div>
 
-        <br>
-		<p>Output filename: </p>
-			<span class="input-append">
-		    	<input type="text" data-bind="value: newFileName">
-		    	<button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Confirm Filename') }}</button>
-			</span>
-            <p class="positiveText" data-bind="visible: pathValidated() == true">Validated!</p>
+        <div class="fileControls">
+            <p>Output filename: </p>
+            <span class="input-append">
+                        <input type="text" data-bind="value: newFileName">
+                        <button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Confirm Filename') }}</button>
+                    </span>
+            <p class="positiveText" data-bind="visible: pathValidated() == true">
+                Validated!
+            </p>
+        </div>
     </div>
     <p class="text-center" style="margin-top:2em;" data-bind="visible: disabledControls">
-            <b>Printer is busy...</b>
+        <b>Printer is busy...</b>
     </p>
 </body>
 
@@ -72,21 +77,11 @@
     </div>
     <div class="modal-body">
         <p>Data will be saved to
-        <span data-bind="text: settings.settings.plugins.stretchingstagecontroller.save_path() + saveFileName()"></span>
-        and filenames will be appended with their port names.</p>
+            <span data-bind="text: settings.settings.plugins.stretchingstagecontroller.save_path() + saveFileName()"></span>
+            and filenames will be appended with their port names.</p>
     </div>
     <div class="modal-footer">
         <button class="btn btn-cancel" data-dismiss="modal" aria-hidden="true">Cancel</button>
         <button class="btn btn-confirm">Confirm</button>
     </div>
 </div>
-
-
-{#<div className="btn btn-mini" data-bind="click:#}
-{#    function() {#}
-{#        if ($root.enableSelectAndPrint($data))#}
-{#            { $root.loadFile($data, true); }#}
-{#        else { return; }#}
-{#    }">#}
-{#        <i className="fas fa-print"></i>#}
-{#    </div>#}
