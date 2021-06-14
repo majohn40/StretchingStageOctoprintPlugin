@@ -14,7 +14,7 @@ plugin_package = "octoprint_stretchingstagecontroller"
 plugin_name = "OctoPrint-Stretchingstagecontroller"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "1.0.0"
+plugin_version = "1.1.0"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # modul3
@@ -68,8 +68,7 @@ from setuptools import setup
 try:
 	import octoprint_setuptools
 except:
-	print("Could not import OctoPrint's setuptools, are you sure you are running that under "
-	      "the same python installation that OctoPrint is installed under?")
+	print("Could not import OctoPrint's setuptools, are you sure you have the 'octoprint' python library installed?")
 	import sys
 	sys.exit(-1)
 

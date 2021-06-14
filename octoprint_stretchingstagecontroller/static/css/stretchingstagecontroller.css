@@ -1,16 +1,31 @@
-/* TODO: Have your plugin's CSS files generated to here. */
-.validated{
 
-margin: 15px;
-font-size: 14px;
-color: #656666;
-content: "Example";
-  
-background-color: #fff;
-border-color: #929494;
-border-width: 1px;
-border-radius: 4px;
+/*.validated{*/
 
-padding: 10px 20px 10px;
-border-style: solid;
+/*margin: 15px;*/
+/*font-size: 14px;*/
+/*color: #656666;*/
+
+/*background-color: #fff;*/
+/*border-color: #929494;*/
+/*border-width: 1px;*/
+/*border-radius: 4px;*/
+
+/*padding: 10px 20px 10px;*/
+/*border-style: solid;*/
+/*}*/
+
+.disabledControls {
+    pointer-events: none;
+    opacity: 0.4;
+}
+
+.positiveText {
+    color:green;
+    display:inline-block;
+    margin: 4px 0 0 2em;
+    font-weight: bold;
+}
+
+input[type='checkbox'] {
+    margin-top: 0px;
 }

@@ -1,20 +1,42 @@
 <!DOCTYPE html>
 <body>
-	<h1> Stretching Stage Controller </h1>
-		<label class="control-label">{{ _('Serial Port') }}</label>
-        <div class="input-append">
-            <div class="controls">
-<!--                 <select data-bind="options: portOptions, value: settings.plugins.stretchingstagecontroller.serial_read_port"></select> -->
-                <input type="text" data-bind="value: newPort"></input>
-                <button class="btn btn-primary" data-bind="click: connectCOM, enable: dataPortConnected() == false">{{ _('Connect COM') }}</button>
-                <button class="btn btn-primary" data-bind="click:disconnectCOM, enable: dataPortConnected() == true">{{ _('Disconnect COM') }}</button>
+    <h1> Stretching Stage Controller </h1>
+
+    <p class="text-center" data-bind="visible: listOfPorts().length == 0"><b>
+        Please wait for printer to become ready and port fetching to complete.
+    </b></p>
+
+    <div class="pluginControls" data-bind="class: disabledControls, visible: listOfPorts().length > 0">
+        <div class="portList">
+            <div data-bind="foreach: listOfPorts">
+                <p>
+                    <input type="checkbox" value="" data-bind="checked:$parent.selectedPorts, value:device, enable: $parent.dataPortConnected() == false">&nbsp;
+                    <span style="margin: 4px 0 0 0;display:inline-block;" data-bind="text:device"></span>
+                    <span class="positiveText" data-bind="visible:$parent.connectedPorts().indexOf(device) != -1">[Connected]</span>
+                </p>
+            </div>
+            <div class="input-append" data-bind="visible: listOfPorts().length != 0">
+                <div class="controls">
+                    <button class="btn btn-primary" data-bind="click:connectCOM, enable: dataPortConnected() == false">{{ _('Connect COM') }}</button>
+                    <button class="btn btn-danger" data-bind="click:disconnectCOM, enable: dataPortConnected() == true">{{ _('Disconnect COM') }}</button>
+                </div>
             </div>
         </div>
-		<p>Outfile name: </p>
-			<div class="input-append">
-		    	<input type="text" data-bind="value: newFileName">
-		    	<button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Validate Filename') }}</button>
-			</div>
+
+        <div class="fileControls">
+            <p>Output filename: </p>
+            <span class="input-append">
+                        <input type="text" data-bind="value: newFileName">
+                        <button class="btn btn-primary" data-bind="click: validateSettings">{{ _('Confirm Filename') }}</button>
+                    </span>
+            <p class="positiveText" data-bind="visible: pathValidated() == true">
+                Validated!
+            </p>
+        </div>
+    </div>
+    <p class="text-center" style="margin-top:2em;" data-bind="visible: disabledControls">
+        <b>Printer is busy...</b>
+    </p>
 </body>
 
 <!-- Modal-Dialog -->
@@ -54,14 +76,12 @@
         <h3 class="modal-title">Ready to Print?</h3>
     </div>
     <div class="modal-body">
-        <p>Data will be saved to </p>
-        <span data-bind="text: settings.settings.plugins.stretchingstagecontroller.save_path()"></span>
-        <span data-bind="text: saveFileName"></span>
+        <p>Data will be saved to
+            <span data-bind="text: settings.settings.plugins.stretchingstagecontroller.save_path() + saveFileName()"></span>
+            and filenames will be appended with their port names.</p>
     </div>
     <div class="modal-footer">
         <button class="btn btn-cancel" data-dismiss="modal" aria-hidden="true">Cancel</button>
         <button class="btn btn-confirm">Confirm</button>
     </div>
 </div>
-
-
